@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V4.0</title>
+    <title>Ad Optimization Performance Dashboard V4.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,15 +25,16 @@
         .chart-row { display: grid; gap: 20px; margin-bottom: 24px; }
         .row-3-cols { grid-template-columns: 1fr 1fr 1fr; }
         .row-2-cols { grid-template-columns: 1fr 1fr; }
+        .row-1-col { grid-template-columns: 1fr; }
         .chart-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-height: 350px; display: flex; flex-direction: column; }
         .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .chart-title { font-size: 15px; font-weight: 600; color: var(--text-main); margin: 0;}
         .chart-body { flex-grow: 1; position: relative; }
         canvas { max-height: 320px !important; }
-        .table-container { overflow-x: auto; flex-grow: 1; }
+        .table-container { overflow-x: auto; flex-grow: 1; max-height: 400px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
         th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border-color); word-wrap: break-word; vertical-align: top;}
-        th { font-weight: 600; color: var(--text-muted); background: #f8fafc; }
+        th { font-weight: 600; color: var(--text-muted); background: #f8fafc; position: sticky; top: 0; z-index: 10; }
         .btn-toggle { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;}
         .btn-toggle:hover { background: #1d4ed8; }
         .btn-toggle-alt { background: #059669; }
@@ -47,11 +48,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 style="margin-top: 20px; color: #1e293b;">กำลังโหลด Dashboard V4...</h2>
+        <h2 style="margin-top: 20px; color: #1e293b;">กำลังประมวลผลข้อมูล V4.1...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance V4.0</h1>
+        <h1>📊 Ad Optimization Team Performance V4.1</h1>
     </div>
 
     <div class="filter-container">
@@ -59,6 +60,7 @@
         <div class="filter-item"><label>Year</label><select id="flt-year" onchange="updateDashboard()"><option value="All">All Years</option></select></div>
         <div class="filter-item"><label>Month</label><select id="flt-month" onchange="updateDashboard()"><option value="All">All Months</option></select></div>
         <div class="filter-item"><label>BD Team</label><select id="flt-bd" onchange="updateDashboard()"><option value="All">All Teams</option></select></div>
+        <div class="filter-item"><label>Client Name</label><select id="flt-client" onchange="updateDashboard()"><option value="All">All Clients</option></select></div>
         <div class="filter-item"><label>Profit Type</label><select id="flt-profitType" onchange="updateDashboard()"><option value="All">All Types</option></select></div>
         <div class="filter-item"><label>Campaign Funnel</label><select id="flt-funnel" onchange="updateDashboard()"><option value="All">All Funnels</option></select></div>
         <div class="filter-item"><label>Platform</label><select id="flt-platform" onchange="updateDashboard()"><option value="All">All Platforms</option></select></div>
@@ -87,7 +89,7 @@
     </div>
 
     <div class="chart-row row-2-cols">
-        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Overall Profit Type</h3></div><div class="chart-body"><canvas id="profitTypeChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Overall Profit Type</h3><button class="btn-toggle" id="btnToggleProfitType" onclick="toggleProfitType()">View: Count</button></div><div class="chart-body"><canvas id="profitTypeChart"></canvas></div></div>
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Overall Content Type (KOL vs Non-KOL)</h3></div><div class="chart-body"><canvas id="contentChart"></canvas></div></div>
     </div>
 
@@ -96,15 +98,32 @@
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Trend by Month</h3><button class="btn-toggle" id="btnToggleTrend" onclick="toggleTrend()">View: Count</button></div><div class="chart-body"><canvas id="platformTrendChart"></canvas></div></div>
     </div>
 
+    <div class="chart-row row-1-col">
+        <div class="chart-card" style="min-height: 450px;">
+            <div class="chart-header"><h3 class="chart-title">💼 BD Team & Client Name Breakdown Report</h3></div>
+            <div class="table-container">
+                <table id="clientTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%">BD Team</th>
+                            <th style="width: 25%">Client Name</th>
+                            <th style="width: 15%">Camps</th>
+                            <th style="width: 15%">Budget</th>
+                            <th style="width: 20%">Total Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 <script>
-    // ==========================================
-    // ⚙️ ลิงก์ CSV ฝังเรียบร้อยแล้ว ไม่ต้องแก้ไข
-    // ==========================================
     const urlTH = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZXAoLBaosXjc35DnJOopkVnlYtJ8y044UCSCp5YRv1WjbE_4CvtdnOot9RcsEMRgmcgi4iIXdavfW/pub?gid=0&single=true&output=csv';
     const urlHOC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZXAoLBaosXjc35DnJOopkVnlYtJ8y044UCSCp5YRv1WjbE_4CvtdnOot9RcsEMRgmcgi4iIXdavfW/pub?gid=1899005572&single=true&output=csv';
 
     let rawData = []; let currentFilteredData = []; let charts = {};
-    let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count';
+    let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count'; let profitTypeMode = 'count';
 
     function cleanNumber(val) {
         if (!val || val.toString().includes('#N/A')) return 0;
@@ -126,12 +145,16 @@
         return val.toString().trim();
     }
 
-    async function fetchRealData() {
-        if(urlTH.includes('วางลิงก์') || urlHOC.includes('วางลิงก์')) {
-            alert("กรุณาใส่ลิงก์ CSV ในเครื่องหมาย ' ' ก่อนใช้งาน");
-            document.getElementById('loading-screen').style.display = 'none'; return;
-        }
+    // ฟังก์ชันกรองขยะประเภทวันที่ออกจาก Content Type
+    function cleanContentType(val) {
+        if (!val) return 'Unknown';
+        let txt = val.toString().trim().toUpperCase();
+        if (txt === 'KOL') return 'KOL';
+        if (txt === 'NON-KOL' || txt === 'NON KOL') return 'Non-KOL';
+        return 'Unknown'; // กรองพวกข้อมูลที่เป็นวันที่ (เช่น 4-Jan, 2024-01-01) หรือข้อมูลขยะอื่นๆ ออก
+    }
 
+    async function fetchRealData() {
         try {
             const [resTH, resHOC] = await Promise.all([fetch(urlTH), fetch(urlHOC)]);
             const csvTH = await resTH.text(); const csvHOC = await resHOC.text();
@@ -148,10 +171,11 @@
                 let pOrig = cleanPercent(row[12]); let pOpt = cleanPercent(row[13]);
                 let dPacing = cleanPercent(row[21]);
                 let pType = pOrig === 0 ? 'Transparent' : 'Profitable';
+                let cType = cleanContentType(row[0]);
 
                 rawData.push({
-                    team: 'TH', year: cleanText(row[50]), month: cleanText(row[51]), bdTeam: cleanText(row[53]),
-                    funnel: cleanText(row[59]), platform: cleanText(row[7]), contentType: cleanText(row[0]), pic: cleanText(row[1]), 
+                    team: 'TH', year: cleanText(row[50]), month: cleanText(row[51]), bdTeam: cleanText(row[53]), clientName: cleanText(row[6]),
+                    funnel: cleanText(row[59]), platform: cleanText(row[7]), contentType: cType, pic: cleanText(row[1]), 
                     budget: budget, spend: spend, profitType: pType, profitRateOpt: pOpt, datePacing: dPacing
                 });
             });
@@ -164,10 +188,11 @@
                 let pOrig = cleanPercent(row[15]); let pOpt = cleanPercent(row[16]);
                 let dPacing = cleanPercent(row[23]);
                 let pType = pOrig === 0 ? 'Transparent' : 'Profitable';
+                let cType = cleanContentType(row[0]);
 
                 rawData.push({
-                    team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bdTeam: cleanText(row[36]),
-                    funnel: cleanText(row[39]), platform: cleanText(row[8]), contentType: cleanText(row[0]), pic: cleanText(row[4]), 
+                    team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bdTeam: cleanText(row[36]), clientName: cleanText(row[7]),
+                    funnel: cleanText(row[39]), platform: cleanText(row[8]), contentType: cType, pic: cleanText(row[4]), 
                     budget: budget, spend: spend, profitType: pType, profitRateOpt: pOpt, datePacing: dPacing
                 });
             });
@@ -175,7 +200,7 @@
             setupFilters(); updateDashboard();
             document.getElementById('loading-screen').style.display = 'none';
         } catch (error) {
-            alert("ดึงข้อมูลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ");
+            alert("ดึงข้อมูลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต");
             document.getElementById('loading-screen').style.display = 'none';
         }
     }
@@ -195,22 +220,21 @@
             const select = document.getElementById(id);
             unique.forEach(val => { let opt = document.createElement('option'); opt.value = val; opt.innerHTML = val; select.appendChild(opt); });
         }
-        populate('flt-year', 'year'); populate('flt-month', 'month'); populate('flt-bd', 'bdTeam'); 
-        populate('flt-profitType', 'profitType'); populate('flt-funnel', 'funnel'); 
-        populate('flt-platform', 'platform'); populate('flt-content', 'contentType');
+        populate('flt-year', 'year'); populate('flt-month', 'month'); populate('flt-bd', 'bdTeam'); populate('flt-client', 'clientName');
+        populate('flt-profitType', 'profitType'); populate('flt-funnel', 'funnel'); populate('flt-platform', 'platform'); populate('flt-content', 'contentType');
     }
 
     function updateDashboard() {
         const filters = {
             team: document.getElementById('flt-team').value, year: document.getElementById('flt-year').value,
-            month: document.getElementById('flt-month').value, bd: document.getElementById('flt-bd').value,
+            month: document.getElementById('flt-month').value, bd: document.getElementById('flt-bd').value, client: document.getElementById('flt-client').value,
             pType: document.getElementById('flt-profitType').value, funnel: document.getElementById('flt-funnel').value,
             platform: document.getElementById('flt-platform').value, content: document.getElementById('flt-content').value
         };
 
         currentFilteredData = rawData.filter(d => 
             (filters.team === 'All' || d.team === filters.team) && (filters.year === 'All' || d.year === filters.year) &&
-            (filters.month === 'All' || d.month === filters.month) && (filters.bd === 'All' || d.bdTeam === filters.bd) &&
+            (filters.month === 'All' || d.month === filters.month) && (filters.bd === 'All' || d.bdTeam === filters.bd) && (filters.client === 'All' || d.clientName === filters.client) &&
             (filters.pType === 'All' || d.profitType === filters.pType) && (filters.funnel === 'All' || d.funnel === filters.funnel) &&
             (filters.platform === 'All' || d.platform === filters.platform) && (filters.content === 'All' || d.contentType === filters.content)
         );
@@ -220,32 +244,21 @@
 
         currentFilteredData.forEach(d => { 
             tBudget += d.budget; tSpend += d.spend;
-            // เงื่อนไขคิดกำไร: Profitable และ Pacing >= 99%
             if (d.profitType === 'Profitable' && d.datePacing >= 0.99) {
-                endedProfitableBudget += d.budget;
-                endedProfitableSpend += d.spend;
-                sumProfitRateOpt += d.profitRateOpt;
-                countEnded++;
+                endedProfitableBudget += d.budget; endedProfitableSpend += d.spend; sumProfitRateOpt += d.profitRateOpt; countEnded++;
             }
         });
 
-        // คืนค่ากล่อง 1
         let mgmtFee = (tBudget / 0.85) - tBudget;
-
-        // คืนค่ากล่อง 2
         let estProfit = 0;
         if (countEnded > 0) {
             let avgOpt = sumProfitRateOpt / countEnded;
-            let mult = (1 - avgOpt) <= 0 ? 1 : (1 - avgOpt); // กัน error หาร 0
+            let mult = (1 - avgOpt) <= 0 ? 1 : (1 - avgOpt);
             let budgetIncProfit = endedProfitableBudget / mult;
             estProfit = budgetIncProfit - endedProfitableSpend;
         }
 
-        // คืนค่ากล่อง 3
-        let totalProfit = mgmtFee + estProfit;
-        let budgetIncFee = tBudget / 0.85;
-        let profitRate = budgetIncFee > 0 ? (totalProfit / budgetIncFee) * 100 : 0;
-
+        let totalProfit = mgmtFee + estProfit; let budgetIncFee = tBudget / 0.85; let profitRate = budgetIncFee > 0 ? (totalProfit / budgetIncFee) * 100 : 0;
         const fmt = (n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n);
         
         document.getElementById('kpi-camp').innerText = currentFilteredData.length;
@@ -256,15 +269,16 @@
         document.getElementById('kpi-total-profit').innerText = "฿" + fmt(totalProfit);
         document.getElementById('kpi-rate').innerText = profitRate.toFixed(1) + "%";
 
-        drawPicChart(currentFilteredData); drawBdTable(currentFilteredData, fmt);
-        drawFunnelRadar(currentFilteredData); drawBdFunnelChart(currentFilteredData);
-        drawBdProfitChart(currentFilteredData); drawProfitTypeChart(currentFilteredData);
+        drawPicChart(currentFilteredData); drawBdTable(currentFilteredData, fmt); drawFunnelRadar(currentFilteredData); 
+        drawBdFunnelChart(currentFilteredData); drawBdProfitChart(currentFilteredData); drawProfitTypeChart(currentFilteredData);
         drawContentChart(currentFilteredData); drawPlatformUsage(currentFilteredData); drawPlatformTrend(currentFilteredData);
+        drawClientTable(currentFilteredData, fmt);
     }
 
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
     function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
+    function toggleProfitType() { profitTypeMode = profitTypeMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleProfitType').innerText = profitTypeMode === 'count' ? 'View: Count' : 'View: Budget'; drawProfitTypeChart(currentFilteredData); }
     
     function destroy(name) { if(charts[name]) charts[name].destroy(); }
     const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
@@ -275,27 +289,50 @@
     }
 
     function drawBdTable(data, fmt) {
-        // Table คำนวณกำไรเป๊ะตาม Logic หลัก
         const tbody = document.querySelector('#bdTable tbody'); tbody.innerHTML = ''; const stats = {};
         data.forEach(d => { 
             if(d.bdTeam === 'Unknown') return; 
             if(!stats[d.bdTeam]) stats[d.bdTeam] = { camps: 0, budget: 0, eBud: 0, eSpend: 0, sumR: 0, eCnt: 0 }; 
             stats[d.bdTeam].camps++; stats[d.bdTeam].budget += d.budget;
-            if (d.profitType === 'Profitable' && d.datePacing >= 0.99) {
-                stats[d.bdTeam].eBud += d.budget; stats[d.bdTeam].eSpend += d.spend; stats[d.bdTeam].sumR += d.profitRateOpt; stats[d.bdTeam].eCnt++;
-            }
+            if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { stats[d.bdTeam].eBud += d.budget; stats[d.bdTeam].eSpend += d.spend; stats[d.bdTeam].sumR += d.profitRateOpt; stats[d.bdTeam].eCnt++; }
         });
         Object.keys(stats).forEach(bd => {
-            let m = (stats[bd].budget / 0.85) - stats[bd].budget;
-            let p = 0;
-            if (stats[bd].eCnt > 0) {
-                let mlt = 1 - (stats[bd].sumR / stats[bd].eCnt); if (mlt <= 0) mlt = 1;
-                p = (stats[bd].eBud / mlt) - stats[bd].eSpend;
-            }
+            let m = (stats[bd].budget / 0.85) - stats[bd].budget; let p = 0;
+            if (stats[bd].eCnt > 0) { let mlt = 1 - (stats[bd].sumR / stats[bd].eCnt); if (mlt <= 0) mlt = 1; p = (stats[bd].eBud / mlt) - stats[bd].eSpend; }
             stats[bd].totalP = m + p;
         });
         Object.keys(stats).sort((a,b) => stats[b].totalP - stats[a].totalP).slice(0, 10).forEach(bd => {
             tbody.innerHTML += `<tr><td>${bd}</td><td>${stats[bd].camps}</td><td>฿${fmt(stats[bd].totalP)}</td></tr>`;
+        });
+    }
+
+    // ฟังก์ชันวาดตารางรายงานละเอียดแบบใหม่ (BD Team & Client Name Breakdown)
+    function drawClientTable(data, fmt) {
+        const tbody = document.querySelector('#clientTable tbody'); tbody.innerHTML = '';
+        const stats = {};
+        
+        data.forEach(d => {
+            if (d.bdTeam === 'Unknown' || d.clientName === 'Unknown') return;
+            const key = `${d.bdTeam} || ${d.clientName}`;
+            if (!stats[key]) {
+                stats[key] = { bd: d.bdTeam, client: d.clientName, camps: 0, budget: 0, eBud: 0, eSpend: 0, sumR: 0, eCnt: 0 };
+            }
+            stats[key].camps++;
+            stats[key].budget += d.budget;
+            if (d.profitType === 'Profitable' && d.datePacing >= 0.99) {
+                stats[key].eBud += d.budget; stats[key].eSpend += d.spend; stats[key].sumR += d.profitRateOpt; stats[key].eCnt++;
+            }
+        });
+
+        Object.keys(stats).forEach(key => {
+            let m = (stats[key].budget / 0.85) - stats[key].budget; let p = 0;
+            if (stats[key].eCnt > 0) { let mlt = 1 - (stats[key].sumR / stats[key].eCnt); if (mlt <= 0) mlt = 1; p = (stats[key].eBud / mlt) - stats[key].eSpend; }
+            stats[key].totalP = m + p;
+        });
+
+        Object.keys(stats).sort((a,b) => stats[b].totalP - stats[a].totalP).forEach(key => {
+            const item = stats[key];
+            tbody.innerHTML += `<tr><td>${item.bd}</td><td>${item.client}</td><td>${item.camps}</td><td>฿${fmt(item.budget)}</td><td>฿${fmt(item.totalP)}</td></tr>`;
         });
     }
 
@@ -317,25 +354,24 @@
     function drawBdProfitChart(data) {
         destroy('bdProfit'); const types = ['Profitable', 'Transparent']; const colors = ['#059669', '#64748b'];
         const bds = [...new Set(data.map(d => d.bdTeam))].filter(b => b!=='Unknown').slice(0, 12);
-        const datasets = types.map((t, i) => ({ 
-            label: t, backgroundColor: colors[i], 
-            data: bds.map(bd => {
-                let camps = data.filter(d => d.bdTeam === bd && d.profitType === t);
-                return bdProfitMode === 'count' ? camps.length : camps.reduce((s, c) => s + c.budget, 0);
-            }) 
-        }));
+        const datasets = types.map((t, i) => ({ label: t, backgroundColor: colors[i], data: bds.map(bd => { let camps = data.filter(d => d.bdTeam === bd && d.profitType === t); return bdProfitMode === 'count' ? camps.length : camps.reduce((s, c) => s + c.budget, 0); }) }));
         charts['bdProfit'] = new Chart(document.getElementById('bdProfitChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false } });
     }
 
+    // ปรับปรุงกราฟ Overall Profit Type ให้สลับดูยอดเงิน Budget ได้ตามคำขอข้อที่ 1
     function drawProfitTypeChart(data) {
-        destroy('profitType'); const counts = { 'Profitable': 0, 'Transparent': 0 };
-        data.forEach(d => { if (counts[d.profitType] !== undefined) counts[d.profitType]++; });
-        charts['profitType'] = new Chart(document.getElementById('profitTypeChart'), { type: 'doughnut', data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#059669', '#64748b'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false }});
+        destroy('profitType'); const types = ['Profitable', 'Transparent'];
+        const values = types.map(t => {
+            let camps = data.filter(d => d.profitType === t);
+            return profitTypeMode === 'count' ? camps.length : camps.reduce((s, c) => s + c.budget, 0);
+        });
+        charts['profitType'] = new Chart(document.getElementById('profitTypeChart'), { type: 'doughnut', data: { labels: types, datasets: [{ data: values, backgroundColor: ['#059669', '#64748b'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false } });
     }
 
+    // กราฟสัดส่วน KOL vs Non-KOL ที่ได้รับการ Clean ลบขยะวันที่ออกแล้วตามข้อที่ 2
     function drawContentChart(data) {
         destroy('content'); const counts = {}; data.forEach(d => { if(d.contentType !== 'Unknown') counts[d.contentType] = (counts[d.contentType] || 0) + 1; });
-        charts['content'] = new Chart(document.getElementById('contentChart'), { type: 'doughnut', data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#8b5cf6', '#ec4899', '#f59e0b'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false }});
+        charts['content'] = new Chart(document.getElementById('contentChart'), { type: 'doughnut', data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#8b5cf6', '#ec4899'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false } });
     }
 
     function drawPlatformUsage(data) {
@@ -344,16 +380,8 @@
     }
 
     function drawPlatformTrend(data) {
-        destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6'];
-        const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown');
-        const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort();
-        const datasets = platforms.map((plat, i) => {
-            const dataPoints = months.map(m => {
-                const camps = data.filter(d => d.platform === plat && d.month === m);
-                return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.budget, 0); 
-            });
-            return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false };
-        });
+        destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort();
+        const datasets = platforms.map((plat, i) => { const dataPoints = months.map(m => { const camps = data.filter(d => d.platform === plat && d.month === m); return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.budget, 0); }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; });
         charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false } });
     }
 
