@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Optimization Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #475569; --border-color: #cbd5e1; --primary: #2563eb; --success: #059669; --warning: #d97706; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px 40px; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { font-size: 24px; margin: 0; color: var(--text-main); }
+        .filter-container { display: flex; gap: 15px; background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 24px; flex-wrap: wrap; }
+        .filter-item { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
+        .filter-item label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+        .filter-item select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 24px; }
+        .kpi-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
+        .kpi-card:nth-child(4) { border-top-color: var(--success); }
+        .kpi-card:nth-child(5) { border-top-color: var(--warning); }
+        .kpi-title { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+        .kpi-value { font-size: 22px; font-weight: 700; margin-top: 8px; }
+        .chart-row { display: grid; gap: 20px; margin-bottom: 24px; }
+        .row-3-cols { grid-template-columns: 1fr 1fr 1fr; }
+        .row-2-cols { grid-template-columns: 1fr 1fr; }
+        .chart-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-height: 350px; display: flex; flex-direction: column; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .chart-title { font-size: 15px; font-weight: 600; color: var(--text-main); margin: 0;}
+        .chart-body { flex-grow: 1; position: relative; }
+        canvas { max-height: 320px !important; }
+        .table-container { overflow-x: auto; flex-grow: 1; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+        th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border-color); word-wrap: break-word; vertical-align: top;}
+        th { font-weight: 600; color: var(--text-muted); background: #f8fafc; }
+        .btn-toggle { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;}
+        .btn-toggle:hover { background: #1d4ed8; }
+        .btn-toggle-alt { background: #059669; }
+        .btn-toggle-alt:hover { background: #047857; }
+        #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .spinner { border: 6px solid #f3f3f3; border-top: 6px solid #2563eb; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <h2 style="margin-top: 20px; color: #1e293b;">กำลังโหลด Dashboard...</h2>
+    </div>
+
+    <div class="header-container">
+        <h1>📊 Ad Optimization Team Performance</h1>
+    </div>
+
+    <div class="filter-container">
+        <div class="filter-item"><label>Ad Opt Team</label><select id="flt-team" onchange="updateDashboard()"><option value="All">All Teams</option><option value="TH">TH</option><option value="HOC">HOC</option></select></div>
+        <div class="filter-item"><label>Month</label><select id="flt-month" onchange="updateDashboard()"><option value="All">All Months</option></select></div>
+        <div class="filter-item"><label>BD Team</label><select id="flt-bd" onchange="updateDashboard()"><option value="All">All Teams</option></select></div>
+        <div class="filter-item"><label>Campaign Funnel</label><select id="flt-funnel" onchange="updateDashboard()"><option value="All">All Funnels</option></select></div>
+        <div class="filter-item"><label>Platform</label><select id="flt-platform" onchange="updateDashboard()"><option value="All">All Platforms</option></select></div>
+        <div class="filter-item"><label>Content Type</label><select id="flt-content" onchange="updateDashboard()"><option value="All">All Types</option></select></div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-title">Total Campaigns</div><div class="kpi-value" id="kpi-camp">0</div></div>
+        <div class="kpi-card"><div class="kpi-title">Total Budget (THB)</div><div class="kpi-value" id="kpi-budget">0</div></div>
+        <div class="kpi-card"><div class="kpi-title">Actual Spending (THB)</div><div class="kpi-value" id="kpi-spend">0</div></div>
+        <div class="kpi-card"><div class="kpi-title">Est. Profit (THB)</div><div class="kpi-value" id="kpi-profit">0</div></div>
+        <div class="kpi-card"><div class="kpi-title">Profit Margin (%)</div><div class="kpi-value" id="kpi-margin">0%</div></div>
+    </div>
+
+    <div class="chart-row row-3-cols">
+        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Workload by PIC</h3></div><div class="chart-body"><canvas id="picChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">BD Team Performance</h3></div><div class="table-container"><table id="bdTable"><thead><tr><th style="width:45%">BD Team</th><th style="width:25%">Camps</th><th style="width:30%">Est. Profit</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Campaign Funnel</h3><button class="btn-toggle btn-toggle-alt" id="btnToggleFunnel" onclick="toggleFunnel()">View: Count</button></div><div class="chart-body"><canvas id="funnelRadarChart"></canvas></div></div>
+    </div>
+
+    <div class="chart-row row-2-cols">
+        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">BD Team vs Campaign Funnel</h3></div><div class="chart-body"><canvas id="bdFunnelChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">BD Team vs Content Type</h3></div><div class="chart-body"><canvas id="bdContentChart"></canvas></div></div>
+    </div>
+
+    <div class="chart-row row-2-cols">
+        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Usage (Overview)</h3></div><div class="chart-body"><canvas id="platformUsageChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Trend by Month</h3><button class="btn-toggle" id="btnToggleTrend" onclick="toggleTrend()">View: Count</button></div><div class="chart-body"><canvas id="platformTrendChart"></canvas></div></div>
+    </div>
+
+<script>
+    // ==========================================
+    // ⚙️ วางลิงก์ CSV ของคุณที่บรรทัดด้านล่างนี้ (วางทับภาษาไทย)
+    // ==========================================
+    const urlTH = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZXAoLBaosXjc35DnJOopkVnlYtJ8y044UCSCp5YRv1WjbE_4CvtdnOot9RcsEMRgmcgi4iIXdavfW/pub?gid=0&single=true&output=csv';
+    const urlHOC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZXAoLBaosXjc35DnJOopkVnlYtJ8y044UCSCp5YRv1WjbE_4CvtdnOot9RcsEMRgmcgi4iIXdavfW/pub?gid=1899005572&single=true&output=csv';
+
+    let rawData = []; let currentFilteredData = []; let charts = {};
+    let trendMode = 'count'; let funnelMode = 'count';
+
+    function cleanNumber(val) {
+        if (!val || val.toString().includes('#N/A')) return 0;
+        let str = val.toString().replace(/[฿$,\s]/g, '');
+        let num = parseFloat(str);
+        return isNaN(num) ? 0 : num;
+    }
+
+    function cleanText(val) {
+        if (!val || val.toString().includes('#N/A') || val.toString().trim() === '') return 'Unknown';
+        return val.toString().trim();
+    }
+
+    async function fetchRealData() {
+        if(urlTH.includes('วางลิงก์') || urlHOC.includes('วางลิงก์')) {
+            alert("กรุณาใส่ลิงก์ CSV ในเครื่องหมาย ' ' ก่อนเริ่มใช้งานครับ");
+            document.getElementById('loading-screen').style.display = 'none'; return;
+        }
+
+        try {
+            // ดึงข้อมูลตรงๆ ไม่ใช้ Proxy แล้ว (เหมาะสำหรับวางบนเว็บจริง)
+            const [resTH, resHOC] = await Promise.all([
+                fetch(urlTH),
+                fetch(urlHOC)
+            ]);
+
+            const csvTH = await resTH.text();
+            const csvHOC = await resHOC.text();
+
+            const parsedTH = Papa.parse(csvTH, { skipEmptyLines: true }).data;
+            const parsedHOC = Papa.parse(csvHOC, { skipEmptyLines: true }).data;
+
+            parsedTH.shift(); parsedHOC.shift();
+
+            parsedTH.forEach(row => {
+                const camId = row[4]; 
+                if (!camId || camId.includes('#N/A') || camId === '') return;
+
+                let budget = cleanNumber(row[31]); 
+                let spend = cleanNumber(row[37]);  
+
+                rawData.push({
+                    team: 'TH', contentType: cleanText(row[0]), pic: cleanText(row[1]), platform: cleanText(row[7]), budget: budget, spend: spend, profit: budget - spend, month: cleanText(row[51]), bdTeam: cleanText(row[53]), funnel: cleanText(row[59])
+                });
+            });
+
+            parsedHOC.forEach(row => {
+                const camId = row[5]; 
+                if (!camId || camId.includes('#N/A') || camId === '') return;
+
+                let budget = cleanNumber(row[12]); 
+                let spend = cleanNumber(row[37]);  
+
+                rawData.push({
+                    team: 'HOC', contentType: cleanText(row[0]), pic: cleanText(row[4]), platform: cleanText(row[8]), budget: budget, spend: spend, profit: budget - spend, bdTeam: cleanText(row[36]), month: cleanText(row[38]), funnel: cleanText(row[39])
+                });
+            });
+
+            setupFilters();
+            updateDashboard();
+            document.getElementById('loading-screen').style.display = 'none';
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("ดึงข้อมูลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต");
+            document.getElementById('loading-screen').style.display = 'none';
+        }
+    }
+
+    function wrapLabel(text, maxLength = 12) {
+        const words = text.split(' '); let lines = [], currentLine = words[0] || '';
+        for (let i = 1; i < words.length; i++) {
+            if (currentLine.length + words[i].length + 1 <= maxLength) currentLine += " " + words[i];
+            else { lines.push(currentLine); currentLine = words[i]; }
+        }
+        if(currentLine) lines.push(currentLine); return lines;
+    }
+
+    function setupFilters() {
+        function populate(id, key) {
+            const unique = [...new Set(rawData.map(item => item[key]))].filter(val => val !== 'Unknown').sort();
+            const select = document.getElementById(id);
+            unique.forEach(val => { let opt = document.createElement('option'); opt.value = val; opt.innerHTML = val; select.appendChild(opt); });
+        }
+        populate('flt-month', 'month'); populate('flt-bd', 'bdTeam'); 
+        populate('flt-funnel', 'funnel'); populate('flt-platform', 'platform'); populate('flt-content', 'contentType');
+    }
+
+    function updateDashboard() {
+        const filters = {
+            team: document.getElementById('flt-team').value, month: document.getElementById('flt-month').value,
+            bd: document.getElementById('flt-bd').value, funnel: document.getElementById('flt-funnel').value,
+            platform: document.getElementById('flt-platform').value, content: document.getElementById('flt-content').value
+        };
+
+        currentFilteredData = rawData.filter(d => 
+            (filters.team === 'All' || d.team === filters.team) && (filters.month === 'All' || d.month === filters.month) &&
+            (filters.bd === 'All' || d.bdTeam === filters.bd) && (filters.funnel === 'All' || d.funnel === filters.funnel) &&
+            (filters.platform === 'All' || d.platform === filters.platform) && (filters.content === 'All' || d.contentType === filters.content)
+        );
+
+        let tBudget = 0, tSpend = 0, tProfit = 0;
+        currentFilteredData.forEach(d => { tBudget += d.budget; tSpend += d.spend; tProfit += d.profit; });
+        const fmt = (n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n);
+        
+        document.getElementById('kpi-camp').innerText = currentFilteredData.length;
+        document.getElementById('kpi-budget').innerText = "฿" + fmt(tBudget);
+        document.getElementById('kpi-spend').innerText = "฿" + fmt(tSpend);
+        document.getElementById('kpi-profit').innerText = "฿" + fmt(tProfit);
+        document.getElementById('kpi-margin').innerText = tBudget ? ((tProfit/tBudget)*100).toFixed(1) + "%" : "0%";
+
+        drawPicChart(currentFilteredData); drawBdTable(currentFilteredData, fmt);
+        drawFunnelRadar(currentFilteredData); drawBdFunnelChart(currentFilteredData);
+        drawBdContentChart(currentFilteredData); drawPlatformUsage(currentFilteredData); drawPlatformTrend(currentFilteredData);
+    }
+
+    function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
+    function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
+    function destroy(name) { if(charts[name]) charts[name].destroy(); }
+    const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
+
+    function drawPicChart(data) {
+        destroy('pic'); const counts = {}; data.forEach(d => counts[d.pic] = (counts[d.pic] || 0) + 1);
+        charts['pic'] = new Chart(document.getElementById('picChart'), { type: 'bar', data: { labels: Object.keys(counts).filter(k => k!=='Unknown').map(l => wrapLabel(l)), datasets: [{ label: 'Campaigns', data: Object.keys(counts).filter(k => k!=='Unknown').map(k => counts[k]), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false } });
+    }
+
+    function drawBdTable(data, fmt) {
+        const tbody = document.querySelector('#bdTable tbody'); tbody.innerHTML = ''; const stats = {};
+        data.forEach(d => { if(d.bdTeam === 'Unknown') return; if(!stats[d.bdTeam]) stats[d.bdTeam] = { camps: 0, profit: 0 }; stats[d.bdTeam].camps++; stats[d.bdTeam].profit += d.profit; });
+        Object.keys(stats).sort((a,b) => stats[b].profit - stats[a].profit).slice(0, 10).forEach(bd => {
+            tbody.innerHTML += `<tr><td>${bd}</td><td>${stats[bd].camps}</td><td>฿${fmt(stats[bd].profit)}</td></tr>`;
+        });
+    }
+
+    function drawFunnelRadar(data) {
+        destroy('radar'); const values = {}; const allFunnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown');
+        allFunnels.forEach(f => values[f] = 0);
+        data.forEach(d => { if(d.funnel !== 'Unknown') values[d.funnel] += (funnelMode === 'count' ? 1 : d.spend); });
+        charts['radar'] = new Chart(document.getElementById('funnelRadarChart'), { type: 'radar', data: { labels: Object.keys(values).map(l => wrapLabel(l)), datasets: [{ label: funnelMode === 'count' ? 'Total Campaigns' : 'Actual Spend (THB)', data: Object.values(values), backgroundColor: 'rgba(5, 150, 105, 0.2)', borderColor: '#059669', pointBackgroundColor: '#059669' }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false, scales: { r: { ticks: { display: false } } } } });
+    }
+
+    function drawBdFunnelChart(data) {
+        destroy('bdFunnel'); const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+        const funnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown');
+        const bds = [...new Set(data.map(d => d.bdTeam))].filter(b => b!=='Unknown').slice(0, 12);
+        const datasets = funnels.map((f, i) => ({ label: f, backgroundColor: colors[i % colors.length], data: bds.map(bd => data.filter(d => d.bdTeam === bd && d.funnel === f).length) }));
+        charts['bdFunnel'] = new Chart(document.getElementById('bdFunnelChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false } });
+    }
+
+    function drawBdContentChart(data) {
+        destroy('bdContent'); const types = [...new Set(data.map(d => d.contentType))].filter(c => c!=='Unknown');
+        const bds = [...new Set(data.map(d => d.bdTeam))].filter(b => b!=='Unknown').slice(0, 12);
+        const datasets = types.map((c, i) => ({ label: c, backgroundColor: i === 0 ? '#8b5cf6' : '#ec4899', data: bds.map(bd => data.filter(d => d.bdTeam === bd && d.contentType === c).length) }));
+        charts['bdContent'] = new Chart(document.getElementById('bdContentChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false } });
+    }
+
+    function drawPlatformUsage(data) {
+        destroy('platform'); const counts = {}; data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + 1; });
+        charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { type: 'bar', data: { labels: Object.keys(counts), datasets: [{ label: 'Campaigns', data: Object.values(counts), backgroundColor: '#0f766e' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false } });
+    }
+
+    function drawPlatformTrend(data) {
+        destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6'];
+        const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown');
+        const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort();
+        const datasets = platforms.map((plat, i) => {
+            const dataPoints = months.map(m => {
+                const camps = data.filter(d => d.platform === plat && d.month === m);
+                return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.budget, 0); 
+            });
+            return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false };
+        });
+        charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false } });
+    }
+
+    fetchRealData();
+</script>
+</body>
+</html>
