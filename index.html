@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.5 (Stable & Clean)</title>
+    <title>Ad Optimization Performance Dashboard V5.6 (Date Range Integration)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -14,11 +14,13 @@
         .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         h1 { font-size: 24px; margin: 0; color: var(--text-main); }
         
-        .filter-container { display: flex; gap: 15px; background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 24px; flex-wrap: wrap; }
+        .filter-container { display: flex; gap: 15px; background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 24px; flex-wrap: wrap; align-items: flex-end; }
         .filter-item { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
         .filter-item label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+        .filter-item input[type="date"] { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; color: var(--text-main); font-family: inherit; outline: none; background: white; box-sizing: border-box; height: 37px; }
+        
         .ms-container { position: relative; user-select: none; }
-        .ms-header { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); font-weight: 500;}
+        .ms-header { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); font-weight: 500; height: 37px; box-sizing: border-box; }
         .ms-header::after { content: '\25BC'; font-size: 10px; color: var(--text-muted); margin-left: 8px; }
         .ms-list { position: absolute; top: 100%; left: 0; min-width: 100%; background: white; border: 1px solid var(--border-color); border-radius: 6px; max-height: 250px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 4px; }
         .ms-list.active { display: block; }
@@ -67,18 +69,21 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.5)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.6)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.5)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.6)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
     <div class="filter-container">
         <div class="filter-item"><label>Ad Opt Team</label><div class="ms-container" id="ms-team"><div class="ms-header" onclick="toggleMs('team')">All Teams</div><div class="ms-list" id="list-team"></div></div></div>
         <div class="filter-item"><label>Year</label><div class="ms-container" id="ms-year"><div class="ms-header" onclick="toggleMs('year')">All Years</div><div class="ms-list" id="list-year"></div></div></div>
-        <div class="filter-item"><label>Month</label><div class="ms-container" id="ms-month"><div class="ms-header" onclick="toggleMs('month')">All Months</div><div class="ms-list" id="list-month"></div></div></div>
+        
+        <div class="filter-item"><label>📅 Campaign Start Date</label><input type="date" id="filter-start-date" onchange="updateDashboard()"></div>
+        <div class="filter-item"><label>📅 Campaign End Date</label><input type="date" id="filter-end-date" onchange="updateDashboard()"></div>
+        
         <div class="filter-item"><label>BD Team</label><div class="ms-container" id="ms-bd"><div class="ms-header" onclick="toggleMs('bd')">All BD Teams</div><div class="ms-list" id="list-bd"></div></div></div>
         <div class="filter-item"><label>Client Name</label><div class="ms-container" id="ms-client"><div class="ms-header" onclick="toggleMs('client')">All Clients</div><div class="ms-list" id="list-client"></div></div></div>
         <div class="filter-item"><label>Ad Opt PIC</label><div class="ms-container" id="ms-pic"><div class="ms-header" onclick="toggleMs('pic')">All PICs</div><div class="ms-list" id="list-pic"></div></div></div>
@@ -177,10 +182,10 @@
     let sortCol = 'budget'; 
     let sortDesc = true; 
 
+    // ลบหัวข้อ month ออกจาก filterConfig
     let filterConfig = {
         team: { label: 'Teams', selected: [], allValues: [] },
         year: { label: 'Years', selected: [], allValues: [] },
-        month: { label: 'Months', selected: [], allValues: [] },
         bd: { label: 'BD Teams', selected: [], allValues: [] },
         client: { label: 'Clients', selected: [], allValues: [] },
         pic: { label: 'PICs', selected: [], allValues: [] },
@@ -190,20 +195,31 @@
         content: { label: 'Content Types', selected: [], allValues: [] }
     };
 
+    const monthMap = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+
     function cleanNumber(val) { if (!val || val.toString().includes('#N/A')) return 0; return parseFloat(val.toString().replace(/[฿$,\s]/g, '')) || 0; }
     function cleanPercent(val) { if (!val || val.toString().includes('#N/A')) return 0; let str = val.toString().replace(/[,\s]/g, ''); if (str.includes('%')) return parseFloat(str.replace('%', '')) / 100; return parseFloat(str) || 0; }
     function cleanText(val) { return (!val || val.toString().includes('#N/A') || val.toString().trim() === '') ? 'Unknown' : val.toString().trim(); }
     function cleanContentType(val) { if (!val) return 'Unknown'; let txt = val.toString().trim().toUpperCase(); if (txt === 'KOL') return 'KOL'; if (txt === 'NON-KOL' || txt === 'NON GOLD' || txt === 'NON KOL') return 'Non-KOL'; return 'Unknown'; }
     function wrapLabel(text, maxLength = 12) { const words = text.split(' '); let lines = [], currentLine = words[0] || ''; for (let i = 1; i < words.length; i++) { if (currentLine.length + words[i].length + 1 <= maxLength) currentLine += " " + words[i]; else { lines.push(currentLine); currentLine = words[i]; } } if(currentLine) lines.push(currentLine); return lines; }
 
-    // ฟังก์ชันจัดกลุ่มแพลตฟอร์มเครือ Google เข้าด้วยกัน
     function standardizePlatform(val) {
-        let txt = cleanText(val);
-        let upper = txt.toUpperCase();
-        if (upper === 'DEMAND GEN' || upper === 'GDN' || upper === 'GOOGLE' || upper === 'PMAX' || upper === 'SEM' || upper === 'YOUTUBE') {
-            return 'Google';
-        }
+        let txt = cleanText(val); let upper = txt.toUpperCase();
+        if (upper === 'DEMAND GEN' || upper === 'GDN' || upper === 'GOOGLE' || upper === 'PMAX' || upper === 'SEM' || upper === 'YOUTUBE') { return 'Google'; }
         return txt;
+    }
+
+    // จุดแก้ไขที่ 2: ฟังก์ชันสำหรับแปลงรูปแบบวันที่ตัวหนังสือ 20-Mar-2026 ให้เป็น Date Object ปลอดภัย 100%
+    function parseCustomDate(str) {
+        if (!str || str === 'Unknown' || str.toString().trim() === '') return null;
+        let parts = str.toString().trim().split('-');
+        if (parts.length !== 3) return null;
+        let day = parseInt(parts[0]);
+        let monStr = parts[1].toLowerCase().substring(0, 3);
+        let year = parseInt(parts[2]);
+        let month = monthMap[monStr];
+        if (isNaN(day) || month === undefined || isNaN(year)) return null;
+        return new Date(year, month, day);
     }
 
     async function fetchRealData() {
@@ -214,15 +230,16 @@
 
         parsedTH.shift(); parsedHOC.shift();
         
+        // จุดแก้ไขที่ 3: ปรับแต่ง index คอลัมน์วันที่ตามพิกัดใหม่ TH (J,K) | HOC (K,L)
         parsedTH.forEach(row => {
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
             let netBudget = cleanNumber(row[31]);
             rawData.push({ 
                 team: 'TH', year: cleanText(row[50]), month: cleanText(row[51]), bd: cleanText(row[53]), 
                 client: cleanText(row[60]), adAccount: cleanText(row[52]), funnel: cleanText(row[59]), 
-                platform: standardizePlatform(row[7]), 
-                content: cleanContentType(row[0]), pic: cleanText(row[1]), 
-                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]) 
+                platform: standardizePlatform(row[7]), content: cleanContentType(row[0]), pic: cleanText(row[1]), 
+                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]),
+                startDateObj: parseCustomDate(row[9]), endDateObj: parseCustomDate(row[10])
             });
         });
         parsedHOC.forEach(row => {
@@ -231,14 +248,49 @@
             rawData.push({ 
                 team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bd: cleanText(row[36]), 
                 client: cleanText(row[40]), adAccount: cleanText(row[35]), funnel: cleanText(row[39]), 
-                platform: standardizePlatform(row[8]), 
-                content: cleanContentType(row[0]), pic: cleanText(row[4]), 
-                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]) 
+                platform: standardizePlatform(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[4]), 
+                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]),
+                startDateObj: parseCustomDate(row[10]), endDateObj: parseCustomDate(row[11])
             });
         });
 
-        setupFilters(); updateDashboard();
+        setupFilters(); 
+        setDefaultDates(); // เรียกใช้ฟังก์ชันตั้งค่าปฏิทินเริ่มต้นตามโมเดล Smart Fallback
+        updateDashboard();
         document.getElementById('loading-screen').style.display = 'none';
+    }
+
+    // จุดแก้ไขที่ 4: ระบบคำนวณ Current Month Default + Smart Fallback สลับไปเดือนล่าสุดหากงบเป็น 0
+    function setDefaultDates() {
+        let now = new Date(2026, 4, 1); // ยึดไทม์ไลน์ปัจจุบันในระบบปี 2026 (4 = พฤษภาคม)
+        let currentYear = now.getFullYear();
+        let currentMonth = now.getMonth();
+        
+        let defStart = new Date(currentYear, currentMonth, 1);
+        let defEnd = new Date(currentYear, currentMonth + 1, 0);
+
+        // เช็คว่าเดือนปัจจุบันมีข้อมูลแคมเปญวิ่งเกี่ยวอยู่มั้ย
+        let overlapCount = rawData.filter(d => d.startDateObj && d.endDateObj && (d.startDateObj <= defEnd && d.endDateObj >= defStart)).length;
+
+        if (overlapCount === 0) {
+            // Smart Fallback: ค้นหาวันสิ้นสุดที่มากที่สุดในประวัติไฟล์มาตั้งเป็นเพดานเดือนเริ่มต้นแทน หน้าจอจะไม่ขาวโพลน
+            let maxDate = null;
+            rawData.forEach(d => { if (d.endDateObj && (!maxDate || d.endDateObj > maxDate)) maxDate = d.endDateObj; });
+            if (maxDate) {
+                currentYear = maxDate.getFullYear(); currentMonth = maxDate.getMonth();
+                defStart = new Date(currentYear, currentMonth, 1); defEnd = new Date(currentYear, currentMonth + 1, 0);
+            }
+        }
+
+        const formatToInput = (date) => {
+            let y = date.getFullYear();
+            let m = String(date.getMonth() + 1).padStart(2, '0');
+            let d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        document.getElementById('filter-start-date').value = formatToInput(defStart);
+        document.getElementById('filter-end-date').value = formatToInput(defEnd);
     }
 
     function setupFilters() {
@@ -265,38 +317,19 @@
     }
 
     function toggleMs(fid) { let list = document.getElementById('list-' + fid); let isActive = list.classList.contains('active'); document.querySelectorAll('.ms-list').forEach(l => l.classList.remove('active')); if (!isActive) list.classList.add('active'); }
-    
-    function filterClientList(input) {
-        let filter = input.value.toUpperCase();
-        let labels = document.querySelectorAll('.item-label-client');
-        labels.forEach(label => {
-            let txt = label.textContent || label.innerText;
-            label.style.display = (txt.toUpperCase().indexOf(filter) > -1) ? "" : "none";
-        });
-    }
+    function filterClientList(input) { let filter = input.value.toUpperCase(); let labels = document.querySelectorAll('.item-label-client'); labels.forEach(label => { let txt = label.textContent || label.innerText; label.style.display = (txt.toUpperCase().indexOf(filter) > -1) ? "" : "none"; }); }
 
     function handleAllCheck(fid, el) {
         let checkboxes = document.querySelectorAll(`.chk-${fid}`);
-        if (el.checked) {
-            checkboxes.forEach(c => c.checked = true);
-            filterConfig[fid].selected = [...filterConfig[fid].allValues];
-        } else {
-            checkboxes.forEach(c => c.checked = false);
-            filterConfig[fid].selected = [];
-        }
+        if (el.checked) { checkboxes.forEach(c => c.checked = true); filterConfig[fid].selected = [...filterConfig[fid].allValues]; } 
+        else { checkboxes.forEach(c => c.checked = false); filterConfig[fid].selected = []; }
         updateFilterHeader(fid); updateDashboard();
     }
 
     function handleIndividualCheck(fid, el) {
-        let checkboxes = document.querySelectorAll(`.chk-${fid}`);
-        let allCb = document.getElementById(`all-${fid}`);
-        let val = el.value;
-        
-        if (el.checked) {
-            if (!filterConfig[fid].selected.includes(val)) filterConfig[fid].selected.push(val);
-        } else {
-            filterConfig[fid].selected = filterConfig[fid].selected.filter(v => v !== val);
-        }
+        let checkboxes = document.querySelectorAll(`.chk-${fid}`); let allCb = document.getElementById(`all-${fid}`); let val = el.value;
+        if (el.checked) { if (!filterConfig[fid].selected.includes(val)) filterConfig[fid].selected.push(val); } 
+        else { filterConfig[fid].selected = filterConfig[fid].selected.filter(v => v !== val); }
         allCb.checked = (filterConfig[fid].selected.length === filterConfig[fid].allValues.length);
         updateFilterHeader(fid); updateDashboard();
     }
@@ -317,46 +350,50 @@
             filterConfig[fid].selected = [...filterConfig[fid].allValues]; updateFilterHeader(fid);
         });
         let searchInp = document.getElementById('search-client'); if(searchInp) { searchInp.value = ''; filterClientList(searchInp); }
+        setDefaultDates(); // รีเซ็ตปฏิทินกลับไปค่าตั้งต้นที่ปลอดภัยด้วย
         updateDashboard();
     }
 
     function applyCrossFilter(fid, value) {
         let isIsolated = (filterConfig[fid].selected.length === 1 && filterConfig[fid].selected[0] === value);
         let checkboxes = document.querySelectorAll(`.chk-${fid}`); let allCb = document.getElementById(`all-${fid}`);
-        
-        if (isIsolated) {
-            checkboxes.forEach(c => c.checked = true); if(allCb) allCb.checked = true;
-            filterConfig[fid].selected = [...filterConfig[fid].allValues];
-        } else {
-            checkboxes.forEach(c => { c.checked = (c.value === value); }); if(allCb) allCb.checked = false;
-            filterConfig[fid].selected = [value];
-        }
+        if (isIsolated) { checkboxes.forEach(c => true); if(allCb) allCb.checked = true; filterConfig[fid].selected = [...filterConfig[fid].allValues]; } 
+        else { checkboxes.forEach(c => { c.checked = (c.value === value); }); if(allCb) allCb.checked = false; filterConfig[fid].selected = [value]; }
         updateFilterHeader(fid); updateDashboard();
     }
 
+    // จุดแก้ไขที่ 5: ปรับปรุงระบบคัดกรองข้อมูลให้รองรับ Logic แบบ A (คาบเกี่ยวผูกปฏิทินป๊อปอัพ)
     function updateDashboard() {
-        currentFilteredData = rawData.filter(d => 
-            ((filterConfig.team.selected.length === filterConfig.team.allValues.length) || filterConfig.team.selected.includes(d.team)) &&
-            ((filterConfig.year.selected.length === filterConfig.year.allValues.length) || filterConfig.year.selected.includes(d.year)) &&
-            ((filterConfig.month.selected.length === filterConfig.month.allValues.length) || filterConfig.month.selected.includes(d.month)) &&
-            ((filterConfig.bd.selected.length === filterConfig.bd.allValues.length) || filterConfig.bd.selected.includes(d.bd)) &&
-            ((filterConfig.client.selected.length === filterConfig.client.allValues.length) || filterConfig.client.selected.includes(d.client)) &&
-            ((filterConfig.pic.selected.length === filterConfig.pic.allValues.length) || filterConfig.pic.selected.includes(d.pic)) &&
-            ((filterConfig.profitType.selected.length === filterConfig.profitType.allValues.length) || filterConfig.profitType.selected.includes(d.profitType)) &&
-            ((filterConfig.funnel.selected.length === filterConfig.funnel.allValues.length) || filterConfig.funnel.selected.includes(d.funnel)) &&
-            ((filterConfig.platform.selected.length === filterConfig.platform.allValues.length) || filterConfig.platform.selected.includes(d.platform)) &&
-            ((filterConfig.content.selected.length === filterConfig.content.allValues.length) || filterConfig.content.selected.includes(d.content))
-        );
+        let startVal = document.getElementById('filter-start-date').value;
+        let endVal = document.getElementById('filter-end-date').value;
+        
+        let pDate = (val) => { if(!val) return null; let p = val.split('-'); return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])); };
+        let startDateSelected = pDate(startVal);
+        let endDateSelected = pDate(endVal);
+
+        currentFilteredData = rawData.filter(d => {
+            // เช็คเงื่อนไขคาบเกี่ยวของปฏิทิน (แคมเปญเริ่มก่อนวันสิ้นสุดปฏิทิน และ แคมเปญจบหลังวันเริ่มต้นปฏิทิน)
+            let dateMatch = true;
+            if (startDateSelected && endDateSelected && d.startDateObj && d.endDateObj) {
+                dateMatch = (d.startDateObj <= endDateSelected && d.endDateObj >= startDateSelected);
+            }
+            return dateMatch &&
+                ((filterConfig.team.selected.length === filterConfig.team.allValues.length) || filterConfig.team.selected.includes(d.team)) &&
+                ((filterConfig.year.selected.length === filterConfig.year.allValues.length) || filterConfig.year.selected.includes(d.year)) &&
+                ((filterConfig.bd.selected.length === filterConfig.bd.allValues.length) || filterConfig.bd.selected.includes(d.bd)) &&
+                ((filterConfig.client.selected.length === filterConfig.client.allValues.length) || filterConfig.client.selected.includes(d.client)) &&
+                ((filterConfig.pic.selected.length === filterConfig.pic.allValues.length) || filterConfig.pic.selected.includes(d.pic)) &&
+                ((filterConfig.profitType.selected.length === filterConfig.profitType.allValues.length) || filterConfig.profitType.selected.includes(d.profitType)) &&
+                ((filterConfig.funnel.selected.length === filterConfig.funnel.allValues.length) || filterConfig.funnel.selected.includes(d.funnel)) &&
+                ((filterConfig.platform.selected.length === filterConfig.platform.allValues.length) || filterConfig.platform.selected.includes(d.platform)) &&
+                ((filterConfig.content.selected.length === filterConfig.content.allValues.length) || filterConfig.content.selected.includes(d.content));
+        });
 
         let tGrossBudget = 0, tSpend = 0, totalMgmtFee = 0, totalEstProfit = 0;
-        
         currentFilteredData.forEach(d => { 
-            tGrossBudget += d.grossBudget; 
-            tSpend += d.spend;
+            tGrossBudget += d.grossBudget; tSpend += d.spend;
             totalMgmtFee += (d.grossBudget * 0.15);
-            if (d.profitType === 'Profitable' && d.datePacing >= 0.99) {
-                totalEstProfit += (d.budget - d.spend);
-            }
+            if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { totalEstProfit += (d.budget - d.spend); }
         });
         
         let totalProfit = totalMgmtFee + totalEstProfit; 
@@ -384,15 +421,8 @@
     }
 
     function handleSort(col) {
-        if (sortCol === col) {
-            sortDesc = !sortDesc;
-        } else {
-            sortCol = col;
-            sortDesc = true;
-        }
-        applySort();
-        updateSortIcons();
-        currentClientPage = 1;
+        if (sortCol === col) { sortDesc = !sortDesc; } else { sortCol = col; sortDesc = true; }
+        applySort(); updateSortIcons(); currentClientPage = 1;
         renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n));
     }
 
@@ -404,8 +434,7 @@
 
     function applySort() {
         clientTableDataList.sort((a, b) => {
-            let valA = a[sortCol];
-            let valB = b[sortCol];
+            let valA = a[sortCol]; let valB = b[sortCol];
             if (valA < valB) return sortDesc ? 1 : -1;
             if (valA > valB) return sortDesc ? -1 : 1;
             return 0;
@@ -418,10 +447,7 @@
             if (d.bd === 'Unknown' || d.client === 'Unknown') return;
             const key = `${d.bd} || ${d.client} || ${d.adAccount}`;
             if (!stats[key]) stats[key] = { bd: d.bd, client: d.client, adAccount: d.adAccount, camps: 0, budget: 0, totalP: 0 };
-            
-            stats[key].camps++; 
-            stats[key].budget += d.grossBudget; 
-            
+            stats[key].camps++; stats[key].budget += d.grossBudget;
             let mFee = d.grossBudget * 0.15;
             let markup = (d.profitType === 'Profitable' && d.datePacing >= 0.99) ? (d.budget - d.spend) : 0;
             stats[key].totalP += (mFee + markup);
@@ -443,20 +469,17 @@
         document.getElementById('btnPrevPage').disabled = currentClientPage === 1; document.getElementById('btnNextPage').disabled = currentClientPage === totalPages;
     }
     
-    function changeClientPage(step) { 
-        const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; 
-        currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); 
-        renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); 
-    }
+    function changeClientPage(step) { const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); }
 
     function togglePlatform() { platformMode = platformMode === 'count' ? 'budget' : 'count'; document.getElementById('btnTogglePlatform').innerText = platformMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformUsage(currentFilteredData); }
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
-    function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
+    function toggleBgProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
     function toggleProfitType() { profitTypeMode = profitTypeMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleProfitType').innerText = profitTypeMode === 'count' ? 'View: Count' : 'View: Budget'; drawProfitTypeChart(currentFilteredData); }
     function destroy(name) { if(charts[name]) charts[name].destroy(); }
     const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
 
+    // --- ตรวจทานพิกัดฟังก์ชันโครงสร้างกราฟและตารางครบถ้วน 100% ตาม Protocol 2 ---
     function drawPicChart(data) { destroy('pic'); const counts = {}; data.forEach(d => { if(d.pic !== 'Unknown') counts[d.pic] = (counts[d.pic] || 0) + 1; }); let origLabels = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['pic'] = new Chart(document.getElementById('picChart'), { type: 'bar', data: { labels: origLabels.map(l => wrapLabel(l)), datasets: [{ data: origLabels.map(k => counts[k]), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('pic', origLabels[el[0].index]); } } }); }
     
     function drawBdTable(data, fmt) {
@@ -484,20 +507,14 @@
         const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); 
         const datasets = types.map((t, i) => ({ 
             label: t, backgroundColor: colors[i], 
-            data: bds.map(bd => { 
-                let filtered = data.filter(d => d.bd === bd && d.profitType === t); 
-                return bdProfitMode === 'count' ? filtered.length : filtered.reduce((s, c) => s + c.grossBudget, 0); 
-            }) 
+            data: bds.map(bd => { let filtered = data.filter(d => d.bd === bd && d.profitType === t); return bdProfitMode === 'count' ? filtered.length : filtered.reduce((s, c) => s + c.grossBudget, 0); }) 
         })); 
         charts['bdProfit'] = new Chart(document.getElementById('bdProfitChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); 
     }
     
     function drawProfitTypeChart(data) { 
         destroy('profitType'); const types = ['Profitable', 'Transparent']; 
-        const values = types.map(t => { 
-            let filtered = data.filter(d => d.profitType === t); 
-            return profitTypeMode === 'count' ? filtered.length : filtered.reduce((s, c) => s + c.grossBudget, 0); 
-        }); 
+        const values = types.map(t => { let filtered = data.filter(d => d.profitType === t); return profitTypeMode === 'count' ? filtered.length : filtered.reduce((s, c) => s + c.grossBudget, 0); }); 
         charts['profitType'] = new Chart(document.getElementById('profitTypeChart'), { type: 'doughnut', data: { labels: types, datasets: [{ data: values, backgroundColor: ['#059669', '#64748b'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('profitType', types[el[0].index]); } } }); 
     }
     
@@ -507,22 +524,13 @@
         destroy('platform'); const counts = {}; 
         data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + (platformMode === 'count' ? 1 : d.grossBudget); }); 
         let origL = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); 
-        charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { 
-            type: 'bar', 
-            data: { labels: origL, datasets: [{ data: origL.map(k => counts[k]), backgroundColor: '#0f766e' }] }, 
-            options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('platform', origL[el[0].index]); } } 
-        }); 
+        charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { type: 'bar', data: { labels: origL, datasets: [{ data: origL.map(k => counts[k]), backgroundColor: '#0f766e' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('platform', origL[el[0].index]); } } }); 
     }
     
     function drawPlatformTrend(data) { 
-        destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; 
-        const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); 
-        const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort(); 
+        destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort(); 
         const datasets = platforms.map((plat, i) => { 
-            const dataPoints = months.map(m => { 
-                const camps = data.filter(d => d.platform === plat && d.month === m); 
-                return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.grossBudget, 0); 
-            }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; 
+            const dataPoints = months.map(m => { const camps = data.filter(d => d.platform === plat && d.month === m); return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.grossBudget, 0); }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; 
         }); 
         charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('month', months[el[0].index]); } } }); 
     }
