@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.2</title>
+    <title>Ad Optimization Performance Dashboard V5.4 (Gross Budget)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -67,11 +67,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.2)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.4)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.2)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.4)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -90,10 +90,10 @@
 
     <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-title">Total Campaigns</div><div class="kpi-value" id="kpi-camp">0</div></div>
-        <div class="kpi-card"><div class="kpi-title">Total Budget (THB)</div><div class="kpi-value" id="kpi-budget">0</div></div>
+        <div class="kpi-card"><div class="kpi-title">Gross Budget (THB)</div><div class="kpi-value" id="kpi-budget">0</div></div>
         <div class="kpi-card"><div class="kpi-title">Actual Spending (THB)</div><div class="kpi-value" id="kpi-spend">0</div></div>
         <div class="kpi-card"><div class="kpi-title">Est. Mgmt Fee (THB)</div><div class="kpi-value" id="kpi-mgmt">0</div></div>
-        <div class="kpi-card"><div class="kpi-title">Est. Profit (Ended Camps)</div><div class="kpi-value" id="kpi-profit">0</div></div>
+        <div class="kpi-card"><div class="kpi-title">Est. Markup Profit (Ended)</div><div class="kpi-value" id="kpi-profit">0</div></div>
         <div class="kpi-card"><div class="kpi-title">Est. Total Profit (THB)</div><div class="kpi-value" id="kpi-total-profit">0</div></div>
         <div class="kpi-card"><div class="kpi-title">Est. Profit Rate (%)</div><div class="kpi-value" id="kpi-rate">0%</div></div>
     </div>
@@ -130,7 +130,7 @@
                             <th style="width: 20%">Client Name</th>
                             <th style="width: 25%">Ad Account Name</th>
                             <th class="sortable" onclick="handleSort('camps')" style="width: 10%; cursor: pointer;">Camps <span id="sort-camps"></span></th>
-                            <th class="sortable" onclick="handleSort('budget')" style="width: 10%; cursor: pointer;">Budget <span id="sort-budget">🔽</span></th>
+                            <th class="sortable" onclick="handleSort('budget')" style="width: 10%; cursor: pointer;">Gross Budget <span id="sort-budget">🔽</span></th>
                             <th class="sortable" onclick="handleSort('totalP')" style="width: 15%; cursor: pointer;">Total Profit <span id="sort-totalP"></span></th>
                         </tr>
                     </thead>
@@ -171,7 +171,6 @@
     const urlHOC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZXAoLBaosXjc35DnJOopkVnlYtJ8y044UCSCp5YRv1WjbE_4CvtdnOot9RcsEMRgmcgi4iIXdavfW/pub?gid=1899005572&single=true&output=csv';
 
     let rawData = []; let currentFilteredData = []; let charts = {};
-    // จุดแก้ไขที่ 1: เพิ่มตัวแปรควบคุมโหมด platformMode ร่วมกับโหมดของกราฟอื่นๆ
     let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count'; let profitTypeMode = 'count'; let platformMode = 'count';
     let clientTableDataList = []; let currentClientPage = 1; const clientRowsPerPage = 10;
     
@@ -207,18 +206,20 @@
         
         parsedTH.forEach(row => {
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
+            let netBudget = cleanNumber(row[31]);
             rawData.push({ 
                 team: 'TH', year: cleanText(row[50]), month: cleanText(row[51]), bd: cleanText(row[53]), 
                 client: cleanText(row[60]), adAccount: cleanText(row[52]), funnel: cleanText(row[59]), platform: cleanText(row[7]), content: cleanContentType(row[0]), pic: cleanText(row[1]), 
-                budget: cleanNumber(row[31]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]) 
+                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]) 
             });
         });
         parsedHOC.forEach(row => {
             if (!row[5] || row[5].includes('#N/A') || row[5] === '') return;
+            let netBudget = cleanNumber(row[12]);
             rawData.push({ 
                 team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bd: cleanText(row[36]), 
                 client: cleanText(row[40]), adAccount: cleanText(row[35]), funnel: cleanText(row[39]), platform: cleanText(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[4]), 
-                budget: cleanNumber(row[12]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]) 
+                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]) 
             });
         });
 
@@ -319,6 +320,7 @@
         updateFilterHeader(fid); updateDashboard();
     }
 
+    // --- อัปเดตโครงสร้างระบบกรองและการคำนวณแบบ Gross Budget V5.4 ---
     function updateDashboard() {
         currentFilteredData = rawData.filter(d => 
             ((filterConfig.team.selected.length === filterConfig.team.allValues.length) || filterConfig.team.selected.includes(d.team)) &&
@@ -333,17 +335,32 @@
             ((filterConfig.content.selected.length === filterConfig.content.allValues.length) || filterConfig.content.selected.includes(d.content))
         );
 
-        let tBudget = 0, tSpend = 0, endedProfitableBudget = 0, endedProfitableSpend = 0, sumProfitRateOpt = 0, countEnded = 0;
+        let tGrossBudget = 0, tSpend = 0, totalMgmtFee = 0, totalEstProfit = 0;
+        
         currentFilteredData.forEach(d => { 
-            tBudget += d.budget; tSpend += d.spend;
-            if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { endedProfitableBudget += d.budget; endedProfitableSpend += d.spend; sumProfitRateOpt += d.profitRateOpt; countEnded++; }
+            tGrossBudget += d.grossBudget; 
+            tSpend += d.spend;
+            
+            // 1. Mgmt Fee คือ 15% ของยอด Gross
+            totalMgmtFee += (d.grossBudget * 0.15);
+            
+            // 2. Markup คิดเฉพาะ Profitable รันจบ = ยอดในชีท (85%) - ยอดใช้จริง (Spend)
+            if (d.profitType === 'Profitable' && d.datePacing >= 0.99) {
+                totalEstProfit += (d.budget - d.spend);
+            }
         });
-        let mgmtFee = (tBudget / 0.85) - tBudget; let estProfit = 0;
-        if (countEnded > 0) { let avgOpt = sumProfitRateOpt / countEnded; let mult = (1 - avgOpt) <= 0 ? 1 : (1 - avgOpt); estProfit = (endedProfitableBudget / mult) - endedProfitableSpend; }
-        let totalProfit = mgmtFee + estProfit; let budgetIncFee = tBudget / 0.85; let profitRate = budgetIncFee > 0 ? (totalProfit / budgetIncFee) * 100 : 0;
+        
+        let totalProfit = totalMgmtFee + totalEstProfit; 
+        let profitRate = tGrossBudget > 0 ? (totalProfit / tGrossBudget) * 100 : 0;
         const fmt = (n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n);
         
-        document.getElementById('kpi-camp').innerText = currentFilteredData.length; document.getElementById('kpi-budget').innerText = "฿" + fmt(tBudget); document.getElementById('kpi-spend').innerText = "฿" + fmt(tSpend); document.getElementById('kpi-mgmt').innerText = "฿" + fmt(mgmtFee); document.getElementById('kpi-profit').innerText = "฿" + fmt(estProfit); document.getElementById('kpi-total-profit').innerText = "฿" + fmt(totalProfit); document.getElementById('kpi-rate').innerText = profitRate.toFixed(1) + "%";
+        document.getElementById('kpi-camp').innerText = currentFilteredData.length; 
+        document.getElementById('kpi-budget').innerText = "฿" + fmt(tGrossBudget); 
+        document.getElementById('kpi-spend').innerText = "฿" + fmt(tSpend); 
+        document.getElementById('kpi-mgmt').innerText = "฿" + fmt(totalMgmtFee); 
+        document.getElementById('kpi-profit').innerText = "฿" + fmt(totalEstProfit); 
+        document.getElementById('kpi-total-profit').innerText = "฿" + fmt(totalProfit); 
+        document.getElementById('kpi-rate').innerText = profitRate.toFixed(1) + "%";
 
         drawPicChart(currentFilteredData); 
         drawBdTable(currentFilteredData, fmt); 
@@ -391,20 +408,17 @@
         data.forEach(d => {
             if (d.bd === 'Unknown' || d.client === 'Unknown') return;
             const key = `${d.bd} || ${d.client} || ${d.adAccount}`;
-            if (!stats[key]) stats[key] = { bd: d.bd, client: d.client, adAccount: d.adAccount, camps: 0, budget: 0, eBud: 0, eSpend: 0, sumR: 0, eCnt: 0 };
-            stats[key].camps++; stats[key].budget += d.budget;
-            if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { stats[key].eBud += d.budget; stats[key].eSpend += d.spend; stats[key].sumR += d.profitRateOpt; stats[key].eCnt++; }
+            if (!stats[key]) stats[key] = { bd: d.bd, client: d.client, adAccount: d.adAccount, camps: 0, budget: 0, totalP: 0 };
+            
+            stats[key].camps++; 
+            stats[key].budget += d.grossBudget; // โชว์ยอดเต็ม 100% ในตาราง
+            
+            let mFee = d.grossBudget * 0.15;
+            let markup = (d.profitType === 'Profitable' && d.datePacing >= 0.99) ? (d.budget - d.spend) : 0;
+            stats[key].totalP += (mFee + markup);
         });
-        clientTableDataList = Object.keys(stats).map(key => {
-            let item = stats[key]; let m = (item.budget / 0.85) - item.budget; let p = 0;
-            if (item.eCnt > 0) { let mlt = 1 - (item.sumR / item.eCnt); p = (item.eBud / (mlt <= 0 ? 1 : mlt)) - item.eSpend; }
-            item.totalP = m + p; return item;
-        });
-        
-        applySort(); 
-        updateSortIcons();
-        currentClientPage = 1; 
-        renderClientTablePage(fmt);
+        clientTableDataList = Object.keys(stats).map(key => stats[key]);
+        applySort(); updateSortIcons(); currentClientPage = 1; renderClientTablePage(fmt);
     }
 
     function renderClientTablePage(fmt) {
@@ -426,7 +440,6 @@
         renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); 
     }
 
-    // จุดแก้ไขที่ 3: เพิ่มฟังก์ชันตัวสลับค่าโหมดของกล่อง Platform Usage
     function togglePlatform() { platformMode = platformMode === 'count' ? 'budget' : 'count'; document.getElementById('btnTogglePlatform').innerText = platformMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformUsage(currentFilteredData); }
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
@@ -439,8 +452,14 @@
     
     function drawBdTable(data, fmt) {
         const tbody = document.querySelector('#bdTable tbody'); let html = ''; const stats = {};
-        data.forEach(d => { if(d.bd === 'Unknown') return; if(!stats[d.bd]) stats[d.bd] = { camps: 0, budget: 0, eBud: 0, eSpend: 0, sumR: 0, eCnt: 0 }; stats[d.bd].camps++; stats[d.bd].budget += d.budget; if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { stats[d.bd].eBud += d.budget; stats[d.bd].eSpend += d.spend; stats[d.bd].sumR += d.profitRateOpt; stats[d.bd].eCnt++; } });
-        Object.keys(stats).forEach(bd => { let m = (stats[bd].budget / 0.85) - stats[bd].budget; let p = 0; if (stats[bd].eCnt > 0) { let mlt = 1 - (stats[bd].sumR / stats[bd].eCnt); p = (stats[bd].eBud / (mlt <= 0 ? 1 : mlt)) - stats[bd].eSpend; } stats[bd].totalP = m + p; });
+        data.forEach(d => { 
+            if(d.bd === 'Unknown') return; 
+            if(!stats[d.bd]) stats[d.bd] = { camps: 0, totalP: 0 }; 
+            stats[d.bd].camps++; 
+            let mFee = d.grossBudget * 0.15;
+            let markup = (d.profitType === 'Profitable' && d.datePacing >= 0.99) ? (d.budget - d.spend) : 0;
+            stats[d.bd].totalP += (mFee + markup);
+        });
         Object.keys(stats).sort((a,b) => stats[b].totalP - stats[a].totalP).slice(0, 10).forEach(bd => { 
             let safeBd = bd.replace(/'/g, "\\'").replace(/"/g, "&quot;");
             html += `<tr class="clickable-row" onclick="applyCrossFilter('bd', '${safeBd}')"><td>${bd}</td><td>${stats[bd].camps}</td><td>฿${fmt(stats[bd].totalP)}</td></tr>`; 
@@ -450,14 +469,34 @@
 
     function drawFunnelRadar(data) { destroy('radar'); const values = {}; const allFunnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown'); allFunnels.forEach(f => values[f] = 0); data.forEach(d => { if(d.funnel !== 'Unknown') values[d.funnel] += (funnelMode === 'count' ? 1 : d.spend); }); charts['radar'] = new Chart(document.getElementById('funnelRadarChart'), { type: 'radar', data: { labels: Object.keys(values).map(l => wrapLabel(l)), datasets: [{ data: Object.values(values), backgroundColor: 'rgba(5, 150, 105, 0.2)', borderColor: '#059669', pointBackgroundColor: '#059669' }] }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, scales: { r: { ticks: { display: false } } } } }); }
     function drawBdFunnelChart(data) { destroy('bdFunnel'); const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']; const funnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown'); const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); const datasets = funnels.map((f, i) => ({ label: f, backgroundColor: colors[i % colors.length], data: bds.map(bd => data.filter(d => d.bd === bd && d.funnel === f).length) })); charts['bdFunnel'] = new Chart(document.getElementById('bdFunnelChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); }
-    function drawBdProfitChart(data) { destroy('bdProfit'); const types = ['Profitable', 'Transparent']; const colors = ['#059669', '#64748b']; const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); const datasets = types.map((t, i) => ({ label: t, backgroundColor: colors[i], data: bds.map(bd => { let camps = data.filter(d => d.bd === bd && d.profitType === t); return bdProfitMode === 'count' ? camps.length : camps.reduce((s, c) => s + c.budget, 0); }) })); charts['bdProfit'] = new Chart(document.getElementById('bdProfitChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); }
-    function drawProfitTypeChart(data) { destroy('profitType'); const types = ['Profitable', 'Transparent']; const values = types.map(t => { let camps = data.filter(d => d.profitType === t); return profitTypeMode === 'count' ? camps.length : camps.reduce((s, c) => s + c.budget, 0); }); charts['profitType'] = new Chart(document.getElementById('profitTypeChart'), { type: 'doughnut', data: { labels: types, datasets: [{ data: values, backgroundColor: ['#059669', '#64748b'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('profitType', types[el[0].index]); } } }); }
+    
+    function drawBdProfitChart(data) { 
+        destroy('bdProfit'); const types = ['Profitable', 'Transparent']; const colors = ['#059669', '#64748b']; 
+        const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); 
+        const datasets = types.map((t, i) => ({ 
+            label: t, backgroundColor: colors[i], 
+            data: bds.map(bd => { 
+                let filtered = data.filter(d => d.bd === bd && d.profitType === t); 
+                return bdProfitMode === 'count' ? filtered.length : filtered.reduce((s, c) => s + c.grossBudget, 0); 
+            }) 
+        })); 
+        charts['bdProfit'] = new Chart(document.getElementById('bdProfitChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); 
+    }
+    
+    function drawProfitTypeChart(data) { 
+        destroy('profitType'); const types = ['Profitable', 'Transparent']; 
+        const values = types.map(t => { 
+            let filtered = data.filter(d => d.profitType === t); 
+            return profitTypeMode === 'count' ? filtered.length : filtered.reduce((s, c) => s + c.grossBudget, 0); 
+        }); 
+        charts['profitType'] = new Chart(document.getElementById('profitTypeChart'), { type: 'doughnut', data: { labels: types, datasets: [{ data: values, backgroundColor: ['#059669', '#64748b'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('profitType', types[el[0].index]); } } }); 
+    }
+    
     function drawContentChart(data) { destroy('content'); const counts = {}; data.forEach(d => { if(d.content !== 'Unknown') counts[d.content] = (counts[d.content] || 0) + 1; }); let origL = Object.keys(counts); charts['content'] = new Chart(document.getElementById('contentChart'), { type: 'doughnut', data: { labels: origL, datasets: [{ data: Object.values(counts), backgroundColor: ['#8b5cf6', '#ec4899'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('content', origL[el[0].index]); } } }); }
     
-    // จุดแก้ไขที่ 4: ปรับปรุงโครงสร้างกราฟและระบบการบวกรวมค่าตามมิติของแพลตฟอร์ม (Platform Usage)
     function drawPlatformUsage(data) { 
         destroy('platform'); const counts = {}; 
-        data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + (platformMode === 'count' ? 1 : d.budget); }); 
+        data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + (platformMode === 'count' ? 1 : d.grossBudget); }); 
         let origL = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); 
         charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { 
             type: 'bar', 
@@ -466,7 +505,18 @@
         }); 
     }
     
-    function drawPlatformTrend(data) { destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort(); const datasets = platforms.map((plat, i) => { const dataPoints = months.map(m => { const camps = data.filter(d => d.platform === plat && d.month === m); return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.budget, 0); }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; }); charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('month', months[el[0].index]); } } }); }
+    function drawPlatformTrend(data) { 
+        destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; 
+        const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); 
+        const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort(); 
+        const datasets = platforms.map((plat, i) => { 
+            const dataPoints = months.map(m => { 
+                const camps = data.filter(d => d.platform === plat && d.month === m); 
+                return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.grossBudget, 0); 
+            }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; 
+        }); 
+        charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('month', months[el[0].index]); } } }); 
+    }
 
     fetchRealData();
 </script>
