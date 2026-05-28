@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V4.9</title>
+    <title>Ad Optimization Performance Dashboard V5.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -13,6 +13,7 @@
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px 40px; }
         .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         h1 { font-size: 24px; margin: 0; color: var(--text-main); }
+        
         .filter-container { display: flex; gap: 15px; background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 24px; flex-wrap: wrap; }
         .filter-item { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
         .filter-item label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
@@ -24,6 +25,7 @@
         .ms-list label { display: block; padding: 8px 12px; font-size: 13px; font-weight: 400; cursor: pointer; color: var(--text-main); margin: 0; transition: background 0.2s; white-space: nowrap; }
         .ms-list label:hover { background: #f8fafc; }
         .ms-list input[type="checkbox"] { margin-right: 8px; cursor: pointer; }
+        
         .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 24px; }
         .kpi-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); transition: transform 0.2s;}
         .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -31,6 +33,7 @@
         .kpi-card:nth-child(6), .kpi-card:nth-child(7) { border-top-color: var(--success); }
         .kpi-title { font-size: 13px; color: var(--text-muted); font-weight: 600; line-height: 1.4; }
         .kpi-value { font-size: 20px; font-weight: 700; margin-top: 8px; }
+        
         .chart-row { display: grid; gap: 20px; margin-bottom: 24px; }
         .row-3-cols { grid-template-columns: 1fr 1fr 1fr; }
         .row-2-cols { grid-template-columns: 1fr 1fr; }
@@ -40,31 +43,34 @@
         .chart-title { font-size: 15px; font-weight: 600; color: var(--text-main); margin: 0;}
         .chart-body { flex-grow: 1; position: relative; }
         canvas { max-height: 320px !important; cursor: pointer; }
+        
         .table-container { overflow-x: auto; flex-grow: 1; min-height: 300px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
         th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border-color); word-wrap: break-word; vertical-align: top;}
         th { font-weight: 600; color: var(--text-muted); background: #f8fafc; position: sticky; top: 0; z-index: 10; }
         tr.clickable-row { cursor: pointer; transition: background 0.2s; }
         tr.clickable-row:hover { background-color: #f1f5f9; }
+        
         .btn-toggle { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background 0.2s;}
         .btn-toggle:hover { background: #1d4ed8; }
-        .btn-toggle:disabled { background: #cbd5e1; cursor: not-allowed; } 
         .btn-toggle-alt { background: #059669; }
         .btn-toggle-alt:hover { background: #047857; }
         .pagination-container { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
+        
         #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
         .spinner { border: 6px solid #f3f3f3; border-top: 6px solid #2563eb; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V4.9)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.0)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V4.9)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.0)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -74,6 +80,7 @@
         <div class="filter-item"><label>Month</label><div class="ms-container" id="ms-month"><div class="ms-header" onclick="toggleMs('month')">All Months</div><div class="ms-list" id="list-month"></div></div></div>
         <div class="filter-item"><label>BD Team</label><div class="ms-container" id="ms-bd"><div class="ms-header" onclick="toggleMs('bd')">All BD Teams</div><div class="ms-list" id="list-bd"></div></div></div>
         <div class="filter-item"><label>Client Name</label><div class="ms-container" id="ms-client"><div class="ms-header" onclick="toggleMs('client')">All Clients</div><div class="ms-list" id="list-client"></div></div></div>
+        <div class="filter-item"><label>Ad Opt PIC</label><div class="ms-container" id="ms-pic"><div class="ms-header" onclick="toggleMs('pic')">All PICs</div><div class="ms-list" id="list-pic"></div></div></div>
         <div class="filter-item"><label>Profit Type</label><div class="ms-container" id="ms-profitType"><div class="ms-header" onclick="toggleMs('profitType')">All Types</div><div class="ms-list" id="list-profitType"></div></div></div>
         <div class="filter-item"><label>Campaign Funnel</label><div class="ms-container" id="ms-funnel"><div class="ms-header" onclick="toggleMs('funnel')">All Funnels</div><div class="ms-list" id="list-funnel"></div></div></div>
         <div class="filter-item"><label>Platform</label><div class="ms-container" id="ms-platform"><div class="ms-header" onclick="toggleMs('platform')">All Platforms</div><div class="ms-list" id="list-platform"></div></div></div>
@@ -138,6 +145,7 @@
     </div>
 
 <script>
+    // 🛡️ ระบบ Global Error Tracker
     window.onerror = function(message, source, lineno, colno, error) {
         alert("🚨 แจ้งเตือนระบบขัดข้อง!\n" + message + "\n(เกิดปัญหาที่บรรทัด " + lineno + ")\nรบกวนแคปจอนี้ส่งทีมพัฒนาครับ");
         let spinner = document.getElementById('loading-screen'); if(spinner) spinner.style.display = 'none'; return false;
@@ -166,10 +174,18 @@
     let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count'; let profitTypeMode = 'count';
     let clientTableDataList = []; let currentClientPage = 1; const clientRowsPerPage = 10;
 
+    // โครงสร้าง Config และป้ายชื่อปุ่ม Filter
     let filterConfig = {
-        team: { label: 'Teams', selected: [] }, year: { label: 'Years', selected: [] }, month: { label: 'Months', selected: [] },
-        bd: { label: 'BD Teams', selected: [] }, client: { label: 'Clients', selected: [] }, profitType: { label: 'Types', selected: [] },
-        funnel: { label: 'Funnels', selected: [] }, platform: { label: 'Platforms', selected: [] }, content: { label: 'Content Types', selected: [] }, pic: { label: 'PICs', selected: [] }
+        team: { label: 'Teams', selected: [], allValues: [] },
+        year: { label: 'Years', selected: [], allValues: [] },
+        month: { label: 'Months', selected: [], allValues: [] },
+        bd: { label: 'BD Teams', selected: [], allValues: [] },
+        client: { label: 'Clients', selected: [], allValues: [] },
+        pic: { label: 'PICs', selected: [], allValues: [] }, // ดึงมิติ PIC เข้าสู่ตัวกรองหลัก
+        profitType: { label: 'Types', selected: [], allValues: [] },
+        funnel: { label: 'Funnels', selected: [] , allValues: [] },
+        platform: { label: 'Platforms', selected: [], allValues: [] },
+        content: { label: 'Content Types', selected: [], allValues: [] }
     };
 
     function cleanNumber(val) { if (!val || val.toString().includes('#N/A')) return 0; return parseFloat(val.toString().replace(/[฿$,\s]/g, '')) || 0; }
@@ -186,13 +202,15 @@
 
         parsedTH.shift(); parsedHOC.shift();
         
+        // Mapping ข้อมูลเป๊ะๆ ตามคำขอ (TH PIC = B/Index 1 , HOC PIC = E/Index 4)
         parsedTH.forEach(row => {
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
             rawData.push({ 
                 team: 'TH', year: cleanText(row[50]), month: cleanText(row[51]), bd: cleanText(row[53]), 
-                client: cleanText(row[60]), // BI (TH DATA Client Name)
-                adAccount: cleanText(row[52]), // BA (TH DATA Ad Account)
-                funnel: cleanText(row[59]), platform: cleanText(row[7]), content: cleanContentType(row[0]), pic: cleanText(row[1]), 
+                client: cleanText(row[60]), // BI
+                adAccount: cleanText(row[52]), // BA
+                funnel: cleanText(row[59]), platform: cleanText(row[7]), content: cleanContentType(row[0]), 
+                pic: cleanText(row[1]), // คอลัมน์ B คือ PIC
                 budget: cleanNumber(row[31]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]) 
             });
         });
@@ -200,9 +218,10 @@
             if (!row[5] || row[5].includes('#N/A') || row[5] === '') return;
             rawData.push({ 
                 team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bd: cleanText(row[36]), 
-                client: cleanText(row[40]), // AO (HOC DATA Client Name) - Corrected
-                adAccount: cleanText(row[35]), // AJ (HOC DATA Ad Account)
-                funnel: cleanText(row[39]), platform: cleanText(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[4]), 
+                client: cleanText(row[40]), // AO
+                adAccount: cleanText(row[35]), // AJ
+                funnel: cleanText(row[39]), platform: cleanText(row[8]), content: cleanContentType(row[0]), 
+                pic: cleanText(row[4]), // คอลัมน์ E คือ PIC
                 budget: cleanNumber(row[12]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]) 
             });
         });
@@ -211,50 +230,119 @@
         document.getElementById('loading-screen').style.display = 'none';
     }
 
+    // --- ปรับปรุงระบบกล่อง Filter สไตล์ใหม่ ติ๊กถูกครบถ้วนตั้งแต่เริ่มต้น ---
     function setupFilters() {
         Object.keys(filterConfig).forEach(fid => {
-            if(fid === 'pic') return;
             let unique = [...new Set(rawData.map(item => item[fid]))].filter(val => val !== 'Unknown').sort();
-            let listHtml = `<label><input type="checkbox" value="All" onchange="handleCheck('${fid}', this)" checked> All ${filterConfig[fid].label}</label>`;
+            filterConfig[fid].allValues = unique;
+            filterConfig[fid].selected = [...unique]; // บังคับติ๊กเลือกครบทั้งหมดตั้งแต่เริ่มต้นแรกรันหน้าเว็บ
+            
+            let listHtml = '';
+            // เงื่อนไขแทรกกล่องพิมพ์ค้นหา (Search input) เฉพาะที่กล่อง Client Name ตามรีเควสต์
+            if (fid === 'client') {
+                listHtml += `<div style="padding: 8px; position: sticky; top: 0; background: white; z-index: 11; border-bottom: 1px solid var(--border-color);">
+                    <input type="text" id="search-client" placeholder="🔍 ค้นหาชื่อลูกค้า..." oninput="filterClientList(this)" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box;">
+                </div>`;
+            }
+
+            listHtml += `<label><input type="checkbox" value="All" id="all-${fid}" onchange="handleAllCheck('${fid}', this)" checked> <b>Select All</b></label>`;
             unique.forEach(val => { 
                 let safeVal = val.replace(/"/g, "&quot;");
-                listHtml += `<label><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleCheck('${fid}', this)"> ${val}</label>`; 
+                listHtml += `<label class="item-label-${fid}"><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label>`; 
             });
             document.getElementById('list-' + fid).innerHTML = listHtml;
         });
         document.addEventListener('click', e => { if (!e.target.closest('.ms-container')) document.querySelectorAll('.ms-list').forEach(l => l.classList.remove('active')); });
     }
+
     function toggleMs(fid) { let list = document.getElementById('list-' + fid); let isActive = list.classList.contains('active'); document.querySelectorAll('.ms-list').forEach(l => l.classList.remove('active')); if (!isActive) list.classList.add('active'); }
     
-    function handleCheck(fid, el) {
-        let checkboxes = document.querySelectorAll(`.chk-${fid}`); let allCb = document.querySelector(`#list-${fid} input[value="All"]`);
-        if (el.value === "All" && el.checked) { checkboxes.forEach(c => c.checked = false); filterConfig[fid].selected = []; } 
-        else { allCb.checked = false; filterConfig[fid].selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value); if (filterConfig[fid].selected.length === 0) allCb.checked = true; }
+    // พิมพ์กรองรายชื่อลูกค้าในกล่อง
+    function filterClientList(input) {
+        let filter = input.value.toUpperCase();
+        let labels = document.querySelectorAll('.item-label-client');
+        labels.forEach(label => {
+            let txt = label.textContent || label.innerText;
+            label.style.display = (txt.toUpperCase().indexOf(filter) > -1) ? "" : "none";
+        });
+    }
+
+    // Logic จัดการปุ่ม "Select All"
+    function handleAllCheck(fid, el) {
+        let checkboxes = document.querySelectorAll(`.chk-${fid}`);
+        if (el.checked) {
+            checkboxes.forEach(c => c.checked = true);
+            filterConfig[fid].selected = [...filterConfig[fid].allValues];
+        } else {
+            checkboxes.forEach(c => c.checked = false);
+            filterConfig[fid].selected = [];
+        }
         updateFilterHeader(fid); updateDashboard();
     }
-    function updateFilterHeader(fid) { if(fid === 'pic') return; let header = document.querySelector(`#ms-${fid} .ms-header`); let count = filterConfig[fid].selected.length; if (count === 0) header.innerText = `All ${filterConfig[fid].label}`; else if (count === 1) header.innerText = filterConfig[fid].selected[0]; else header.innerText = `${count} Selected`; }
+
+    // Logic จัดการกรณีติ๊กเข้า/ติ๊กออกทีละช่องตัวเลือกย่อย
+    function handleIndividualCheck(fid, el) {
+        let checkboxes = document.querySelectorAll(`.chk-${fid}`);
+        let allCb = document.getElementById(`all-${fid}`);
+        let val = el.value;
+        
+        if (el.checked) {
+            if (!filterConfig[fid].selected.includes(val)) filterConfig[fid].selected.push(val);
+        } else {
+            filterConfig[fid].selected = filterConfig[fid].selected.filter(v => v !== val);
+        }
+        // ถ้าเลือกครบถ้วน ปลุกปุ่ม Select All ให้ติ๊กตามอัตโนมัติ
+        allCb.checked = (filterConfig[fid].selected.length === filterConfig[fid].allValues.length);
+        updateFilterHeader(fid); updateDashboard();
+    }
+
+    function updateFilterHeader(fid) {
+        let header = document.querySelector(`#ms-${fid} .ms-header`); if(!header) return;
+        let count = filterConfig[fid].selected.length; let total = filterConfig[fid].allValues.length;
+        if (count === total) header.innerText = `All ${filterConfig[fid].label}`;
+        else if (count === 0) header.innerText = `None Selected`;
+        else if (count === 1) header.innerText = filterConfig[fid].selected[0];
+        else header.innerText = `${count}/${total} Selected`;
+    }
 
     function resetAllFilters() {
         Object.keys(filterConfig).forEach(fid => {
-            filterConfig[fid].selected = [];
-            if(fid !== 'pic') { document.querySelectorAll(`.chk-${fid}`).forEach(c => c.checked = false); let allCb = document.querySelector(`#list-${fid} input[value="All"]`); if(allCb) allCb.checked = true; updateFilterHeader(fid); }
+            let checkboxes = document.querySelectorAll(`.chk-${fid}`); let allCb = document.getElementById(`all-${fid}`);
+            checkboxes.forEach(c => c.checked = true); if(allCb) allCb.checked = true;
+            filterConfig[fid].selected = [...filterConfig[fid].allValues]; updateFilterHeader(fid);
         });
+        let searchInp = document.getElementById('search-client'); if(searchInp) { searchInp.value = ''; filterClientList(searchInp); }
         updateDashboard();
     }
 
+    // เจาะลึก Cross-Filter คลิกแท่งกราฟ/โดนัท/ตาราง เพื่อล็อคเป้ากรองมิตินั้นแบบเดี่ยว
     function applyCrossFilter(fid, value) {
-        if (filterConfig[fid].selected.length === 1 && filterConfig[fid].selected[0] === value) {
-            filterConfig[fid].selected = []; if(fid !== 'pic') { document.querySelectorAll(`.chk-${fid}`).forEach(c => c.checked = false); document.querySelector(`#list-${fid} input[value="All"]`).checked = true; }
+        let isIsolated = (filterConfig[fid].selected.length === 1 && filterConfig[fid].selected[0] === value);
+        let checkboxes = document.querySelectorAll(`.chk-${fid}`); let allCb = document.getElementById(`all-${fid}`);
+        
+        if (isIsolated) {
+            checkboxes.forEach(c => c.checked = true); if(allCb) allCb.checked = true;
+            filterConfig[fid].selected = [...filterConfig[fid].allValues];
         } else {
-            filterConfig[fid].selected = [value]; if(fid !== 'pic') { document.querySelector(`#list-${fid} input[value="All"]`).checked = false; document.querySelectorAll(`.chk-${fid}`).forEach(c => c.checked = (c.value === value)); }
+            checkboxes.forEach(c => { c.checked = (c.value === value); }); if(allCb) allCb.checked = false;
+            filterConfig[fid].selected = [value];
         }
-        if(fid !== 'pic') updateFilterHeader(fid);
-        updateDashboard();
+        updateFilterHeader(fid); updateDashboard();
     }
 
     function updateDashboard() {
+        // Logic กรองคำนวณสอดคล้องสัมพันธ์แบบ Multi-select คอนเฟิร์มความถูกต้อง
         currentFilteredData = rawData.filter(d => 
-            (filterConfig.team.selected.length === 0 || filterConfig.team.selected.includes(d.team)) && (filterConfig.year.selected.length === 0 || filterConfig.year.selected.includes(d.year)) && (filterConfig.month.selected.length === 0 || filterConfig.month.selected.includes(d.month)) && (filterConfig.bd.selected.length === 0 || filterConfig.bd.selected.includes(d.bd)) && (filterConfig.client.selected.length === 0 || filterConfig.client.selected.includes(d.client)) && (filterConfig.profitType.selected.length === 0 || filterConfig.profitType.selected.includes(d.profitType)) && (filterConfig.funnel.selected.length === 0 || filterConfig.funnel.selected.includes(d.funnel)) && (filterConfig.platform.selected.length === 0 || filterConfig.platform.selected.includes(d.platform)) && (filterConfig.content.selected.length === 0 || filterConfig.content.selected.includes(d.content)) && (filterConfig.pic.selected.length === 0 || filterConfig.pic.selected.includes(d.pic))
+            ((filterConfig.team.selected.length === filterConfig.team.allValues.length) || filterConfig.team.selected.includes(d.team)) &&
+            ((filterConfig.year.selected.length === filterConfig.year.allValues.length) || filterConfig.year.selected.includes(d.year)) &&
+            ((filterConfig.month.selected.length === filterConfig.month.allValues.length) || filterConfig.month.selected.includes(d.month)) &&
+            ((filterConfig.bd.selected.length === filterConfig.bd.allValues.length) || filterConfig.bd.selected.includes(d.bd)) &&
+            ((filterConfig.client.selected.length === filterConfig.client.allValues.length) || filterConfig.client.selected.includes(d.client)) &&
+            ((filterConfig.pic.selected.length === filterConfig.pic.allValues.length) || filterConfig.pic.selected.includes(d.pic)) &&
+            ((filterConfig.profitType.selected.length === filterConfig.profitType.allValues.length) || filterConfig.profitType.selected.includes(d.profitType)) &&
+            ((filterConfig.funnel.selected.length === filterConfig.funnel.allValues.length) || filterConfig.funnel.selected.includes(d.funnel)) &&
+            ((filterConfig.platform.selected.length === filterConfig.platform.allValues.length) || filterConfig.platform.selected.includes(d.platform)) &&
+            ((filterConfig.content.selected.length === filterConfig.content.allValues.length) || filterConfig.content.selected.includes(d.content))
         );
 
         let tBudget = 0, tSpend = 0, endedProfitableBudget = 0, endedProfitableSpend = 0, sumProfitRateOpt = 0, countEnded = 0;
@@ -275,6 +363,7 @@
         prepareClientTableData(currentFilteredData, fmt);
     }
 
+    function toggleClientPage(step) { const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); }
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
     function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
@@ -288,10 +377,7 @@
         const tbody = document.querySelector('#bdTable tbody'); let html = ''; const stats = {};
         data.forEach(d => { if(d.bd === 'Unknown') return; if(!stats[d.bd]) stats[d.bd] = { camps: 0, budget: 0, eBud: 0, eSpend: 0, sumR: 0, eCnt: 0 }; stats[d.bd].camps++; stats[d.bd].budget += d.budget; if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { stats[d.bd].eBud += d.budget; stats[d.bd].eSpend += d.spend; stats[d.bd].sumR += d.profitRateOpt; stats[d.bd].eCnt++; } });
         Object.keys(stats).forEach(bd => { let m = (stats[bd].budget / 0.85) - stats[bd].budget; let p = 0; if (stats[bd].eCnt > 0) { let mlt = 1 - (stats[bd].sumR / stats[bd].eCnt); p = (stats[bd].eBud / (mlt <= 0 ? 1 : mlt)) - stats[bd].eSpend; } stats[bd].totalP = m + p; });
-        Object.keys(stats).sort((a,b) => stats[b].totalP - stats[a].totalP).slice(0, 10).forEach(bd => { 
-            let safeBd = bd.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            html += `<tr class="clickable-row" onclick="applyCrossFilter('bd', '${safeBd}')"><td>${bd}</td><td>${stats[bd].camps}</td><td>฿${fmt(stats[bd].totalP)}</td></tr>`; 
-        });
+        Object.keys(stats).sort((a,b) => stats[b].totalP - stats[a].totalP).slice(0, 10).forEach(bd => { let safeBd = bd.replace(/'/g, "\\'").replace(/"/g, "&quot;"); html += `<tr class="clickable-row" onclick="applyCrossFilter('bd', '${safeBd}')"><td>${bd}</td><td>${stats[bd].camps}</td><td>฿${fmt(stats[bd].totalP)}</td></tr>`; });
         tbody.innerHTML = html; 
     }
 
@@ -315,17 +401,9 @@
     function renderClientTablePage(fmt) {
         const tbody = document.querySelector('#clientTable tbody'); let html = '';
         const start = (currentClientPage - 1) * clientRowsPerPage; const paginatedItems = clientTableDataList.slice(start, start + clientRowsPerPage);
-        
         paginatedItems.forEach(item => { 
             let safeClient = item.client.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            html += `<tr class="clickable-row" onclick="applyCrossFilter('client', '${safeClient}')">
-                <td>${item.bd}</td>
-                <td>${item.client}</td>
-                <td>${item.adAccount}</td>
-                <td>${item.camps}</td>
-                <td>฿${fmt(item.budget)}</td>
-                <td>฿${fmt(item.totalP)}</td>
-            </tr>`; 
+            html += `<tr class="clickable-row" onclick="applyCrossFilter('client', '${safeClient}')"><td>${item.bd}</td><td>${item.client}</td><td>${item.adAccount}</td><td>${item.camps}</td><td>฿${fmt(item.budget)}</td><td>฿${fmt(item.totalP)}</td></tr>`; 
         });
         tbody.innerHTML = html;
         const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1;
@@ -334,6 +412,7 @@
     }
     function changeClientPage(step) { const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); }
 
+    // ปิดการโชว์ตัวเลข DataLabels ให้กราฟเรดาร์และกราฟเส้นตามสั่ง
     function drawFunnelRadar(data) { destroy('radar'); const values = {}; const allFunnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown'); allFunnels.forEach(f => values[f] = 0); data.forEach(d => { if(d.funnel !== 'Unknown') values[d.funnel] += (funnelMode === 'count' ? 1 : d.spend); }); charts['radar'] = new Chart(document.getElementById('funnelRadarChart'), { type: 'radar', data: { labels: Object.keys(values).map(l => wrapLabel(l)), datasets: [{ data: Object.values(values), backgroundColor: 'rgba(5, 150, 105, 0.2)', borderColor: '#059669', pointBackgroundColor: '#059669' }] }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, scales: { r: { ticks: { display: false } } } } }); }
     function drawBdFunnelChart(data) { destroy('bdFunnel'); const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']; const funnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown'); const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); const datasets = funnels.map((f, i) => ({ label: f, backgroundColor: colors[i % colors.length], data: bds.map(bd => data.filter(d => d.bd === bd && d.funnel === f).length) })); charts['bdFunnel'] = new Chart(document.getElementById('bdFunnelChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); }
     function drawBdProfitChart(data) { destroy('bdProfit'); const types = ['Profitable', 'Transparent']; const colors = ['#059669', '#64748b']; const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); const datasets = types.map((t, i) => ({ label: t, backgroundColor: colors[i], data: bds.map(bd => { let camps = data.filter(d => d.bd === bd && d.profitType === t); return bdProfitMode === 'count' ? camps.length : camps.reduce((s, c) => s + c.budget, 0); }) })); charts['bdProfit'] = new Chart(document.getElementById('bdProfitChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); }
