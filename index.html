@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.1 (Stable)</title>
+    <title>Ad Optimization Performance Dashboard V5.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -67,11 +67,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.1)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.2)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.1)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.2)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -115,7 +115,7 @@
     </div>
 
     <div class="chart-row row-2-cols">
-        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Usage (Overview)</h3></div><div class="chart-body"><canvas id="platformUsageChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Usage (Overview)</h3><button class="btn-toggle" id="btnTogglePlatform" onclick="togglePlatform()">View: Count</button></div><div class="chart-body"><canvas id="platformUsageChart"></canvas></div></div>
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Trend by Month</h3><button class="btn-toggle" id="btnToggleTrend" onclick="toggleTrend()">View: Count</button></div><div class="chart-body"><canvas id="platformTrendChart"></canvas></div></div>
     </div>
 
@@ -146,7 +146,6 @@
     </div>
 
 <script>
-    // 🛡️ ระบบ Global Error Tracker
     window.onerror = function(message, source, lineno, colno, error) {
         alert("🚨 แจ้งเตือนระบบขัดข้อง!\n" + message + "\n(เกิดปัญหาที่บรรทัด " + lineno + ")\nรบกวนแคปจอนี้ส่งทีมพัฒนาครับ");
         let spinner = document.getElementById('loading-screen'); if(spinner) spinner.style.display = 'none'; return false;
@@ -172,7 +171,8 @@
     const urlHOC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZXAoLBaosXjc35DnJOopkVnlYtJ8y044UCSCp5YRv1WjbE_4CvtdnOot9RcsEMRgmcgi4iIXdavfW/pub?gid=1899005572&single=true&output=csv';
 
     let rawData = []; let currentFilteredData = []; let charts = {};
-    let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count'; let profitTypeMode = 'count';
+    // จุดแก้ไขที่ 1: เพิ่มตัวแปรควบคุมโหมด platformMode ร่วมกับโหมดของกราฟอื่นๆ
+    let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count'; let profitTypeMode = 'count'; let platformMode = 'count';
     let clientTableDataList = []; let currentClientPage = 1; const clientRowsPerPage = 10;
     
     let sortCol = 'budget'; 
@@ -209,10 +209,7 @@
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
             rawData.push({ 
                 team: 'TH', year: cleanText(row[50]), month: cleanText(row[51]), bd: cleanText(row[53]), 
-                client: cleanText(row[60]), // BI
-                adAccount: cleanText(row[52]), // BA
-                funnel: cleanText(row[59]), platform: cleanText(row[7]), content: cleanContentType(row[0]), 
-                pic: cleanText(row[1]), // B
+                client: cleanText(row[60]), adAccount: cleanText(row[52]), funnel: cleanText(row[59]), platform: cleanText(row[7]), content: cleanContentType(row[0]), pic: cleanText(row[1]), 
                 budget: cleanNumber(row[31]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]) 
             });
         });
@@ -220,10 +217,7 @@
             if (!row[5] || row[5].includes('#N/A') || row[5] === '') return;
             rawData.push({ 
                 team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bd: cleanText(row[36]), 
-                client: cleanText(row[40]), // AO
-                adAccount: cleanText(row[35]), // AJ
-                funnel: cleanText(row[39]), platform: cleanText(row[8]), content: cleanContentType(row[0]), 
-                pic: cleanText(row[4]), // E
+                client: cleanText(row[40]), adAccount: cleanText(row[35]), funnel: cleanText(row[39]), platform: cleanText(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[4]), 
                 budget: cleanNumber(row[12]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]) 
             });
         });
@@ -432,6 +426,8 @@
         renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); 
     }
 
+    // จุดแก้ไขที่ 3: เพิ่มฟังก์ชันตัวสลับค่าโหมดของกล่อง Platform Usage
+    function togglePlatform() { platformMode = platformMode === 'count' ? 'budget' : 'count'; document.getElementById('btnTogglePlatform').innerText = platformMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformUsage(currentFilteredData); }
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
     function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
@@ -439,7 +435,6 @@
     function destroy(name) { if(charts[name]) charts[name].destroy(); }
     const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
 
-    // --- กราฟทุกตัวถูกตรวจทานและใส่กลับมาครบถ้วนแล้ว ---
     function drawPicChart(data) { destroy('pic'); const counts = {}; data.forEach(d => { if(d.pic !== 'Unknown') counts[d.pic] = (counts[d.pic] || 0) + 1; }); let origLabels = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['pic'] = new Chart(document.getElementById('picChart'), { type: 'bar', data: { labels: origLabels.map(l => wrapLabel(l)), datasets: [{ data: origLabels.map(k => counts[k]), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('pic', origLabels[el[0].index]); } } }); }
     
     function drawBdTable(data, fmt) {
@@ -458,7 +453,19 @@
     function drawBdProfitChart(data) { destroy('bdProfit'); const types = ['Profitable', 'Transparent']; const colors = ['#059669', '#64748b']; const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); const datasets = types.map((t, i) => ({ label: t, backgroundColor: colors[i], data: bds.map(bd => { let camps = data.filter(d => d.bd === bd && d.profitType === t); return bdProfitMode === 'count' ? camps.length : camps.reduce((s, c) => s + c.budget, 0); }) })); charts['bdProfit'] = new Chart(document.getElementById('bdProfitChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); }
     function drawProfitTypeChart(data) { destroy('profitType'); const types = ['Profitable', 'Transparent']; const values = types.map(t => { let camps = data.filter(d => d.profitType === t); return profitTypeMode === 'count' ? camps.length : camps.reduce((s, c) => s + c.budget, 0); }); charts['profitType'] = new Chart(document.getElementById('profitTypeChart'), { type: 'doughnut', data: { labels: types, datasets: [{ data: values, backgroundColor: ['#059669', '#64748b'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('profitType', types[el[0].index]); } } }); }
     function drawContentChart(data) { destroy('content'); const counts = {}; data.forEach(d => { if(d.content !== 'Unknown') counts[d.content] = (counts[d.content] || 0) + 1; }); let origL = Object.keys(counts); charts['content'] = new Chart(document.getElementById('contentChart'), { type: 'doughnut', data: { labels: origL, datasets: [{ data: Object.values(counts), backgroundColor: ['#8b5cf6', '#ec4899'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('content', origL[el[0].index]); } } }); }
-    function drawPlatformUsage(data) { destroy('platform'); const counts = {}; data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + 1; }); let origL = Object.keys(counts); charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { type: 'bar', data: { labels: origL, datasets: [{ data: Object.values(counts), backgroundColor: '#0f766e' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('platform', origL[el[0].index]); } } }); }
+    
+    // จุดแก้ไขที่ 4: ปรับปรุงโครงสร้างกราฟและระบบการบวกรวมค่าตามมิติของแพลตฟอร์ม (Platform Usage)
+    function drawPlatformUsage(data) { 
+        destroy('platform'); const counts = {}; 
+        data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + (platformMode === 'count' ? 1 : d.budget); }); 
+        let origL = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); 
+        charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { 
+            type: 'bar', 
+            data: { labels: origL, datasets: [{ data: origL.map(k => counts[k]), backgroundColor: '#0f766e' }] }, 
+            options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('platform', origL[el[0].index]); } } 
+        }); 
+    }
+    
     function drawPlatformTrend(data) { destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort(); const datasets = platforms.map((plat, i) => { const dataPoints = months.map(m => { const camps = data.filter(d => d.platform === plat && d.month === m); return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.budget, 0); }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; }); charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('month', months[el[0].index]); } } }); }
 
     fetchRealData();
