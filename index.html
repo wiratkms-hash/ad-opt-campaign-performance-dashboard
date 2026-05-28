@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.1</title>
+    <title>Ad Optimization Performance Dashboard V5.1 (Stable)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -175,7 +175,6 @@
     let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count'; let profitTypeMode = 'count';
     let clientTableDataList = []; let currentClientPage = 1; const clientRowsPerPage = 10;
     
-    // ตั้งค่าตัวแปรสำหรับการจัดเรียงข้อมูลตาราง
     let sortCol = 'budget'; 
     let sortDesc = true; 
 
@@ -352,19 +351,24 @@
         
         document.getElementById('kpi-camp').innerText = currentFilteredData.length; document.getElementById('kpi-budget').innerText = "฿" + fmt(tBudget); document.getElementById('kpi-spend').innerText = "฿" + fmt(tSpend); document.getElementById('kpi-mgmt').innerText = "฿" + fmt(mgmtFee); document.getElementById('kpi-profit').innerText = "฿" + fmt(estProfit); document.getElementById('kpi-total-profit').innerText = "฿" + fmt(totalProfit); document.getElementById('kpi-rate').innerText = profitRate.toFixed(1) + "%";
 
-        drawPicChart(currentFilteredData); drawBdTable(currentFilteredData, fmt); drawFunnelRadar(currentFilteredData); 
-        drawBdFunnelChart(currentFilteredData); drawBdProfitChart(currentFilteredData); drawProfitTypeChart(currentFilteredData);
-        drawContentChart(currentFilteredData); drawPlatformUsage(currentFilteredData); drawPlatformTrend(currentFilteredData);
+        drawPicChart(currentFilteredData); 
+        drawBdTable(currentFilteredData, fmt); 
+        drawFunnelRadar(currentFilteredData); 
+        drawBdFunnelChart(currentFilteredData); 
+        drawBdProfitChart(currentFilteredData); 
+        drawProfitTypeChart(currentFilteredData);
+        drawContentChart(currentFilteredData); 
+        drawPlatformUsage(currentFilteredData); 
+        drawPlatformTrend(currentFilteredData);
         prepareClientTableData(currentFilteredData, fmt);
     }
 
-    // ฟังก์ชั่นจัดเรียงข้อมูลเมื่อกดที่หัวตาราง
     function handleSort(col) {
         if (sortCol === col) {
-            sortDesc = !sortDesc; // สลับจากมากไปน้อยเป็นน้อยไปมาก
+            sortDesc = !sortDesc;
         } else {
             sortCol = col;
-            sortDesc = true; // ค่าเริ่มต้นถ้าเปลี่ยนคอลัมน์คือมากไปน้อย
+            sortDesc = true;
         }
         applySort();
         updateSortIcons();
@@ -372,14 +376,12 @@
         renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n));
     }
 
-    // อัปเดตสัญลักษณ์ลูกศรที่หัวตาราง
     function updateSortIcons() {
         document.getElementById('sort-camps').innerText = sortCol === 'camps' ? (sortDesc ? '🔽' : '🔼') : '';
         document.getElementById('sort-budget').innerText = sortCol === 'budget' ? (sortDesc ? '🔽' : '🔼') : '';
         document.getElementById('sort-totalP').innerText = sortCol === 'totalP' ? (sortDesc ? '🔽' : '🔼') : '';
     }
 
-    // ดำเนินการจัดเรียงอาเรย์ข้อมูล
     function applySort() {
         clientTableDataList.sort((a, b) => {
             let valA = a[sortCol];
@@ -405,7 +407,7 @@
             item.totalP = m + p; return item;
         });
         
-        applySort(); // เรียกใช้การจัดเรียงทุกครั้งที่มีการประมวลผลข้อมูลใหม่
+        applySort(); 
         updateSortIcons();
         currentClientPage = 1; 
         renderClientTablePage(fmt);
@@ -423,7 +425,33 @@
         document.getElementById('clientPageInfo').innerText = `Page ${currentClientPage} of ${totalPages}`;
         document.getElementById('btnPrevPage').disabled = currentClientPage === 1; document.getElementById('btnNextPage').disabled = currentClientPage === totalPages;
     }
-    function changeClientPage(step) { const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); }
+    
+    function changeClientPage(step) { 
+        const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; 
+        currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); 
+        renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); 
+    }
+
+    function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
+    function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
+    function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
+    function toggleProfitType() { profitTypeMode = profitTypeMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleProfitType').innerText = profitTypeMode === 'count' ? 'View: Count' : 'View: Budget'; drawProfitTypeChart(currentFilteredData); }
+    function destroy(name) { if(charts[name]) charts[name].destroy(); }
+    const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
+
+    // --- กราฟทุกตัวถูกตรวจทานและใส่กลับมาครบถ้วนแล้ว ---
+    function drawPicChart(data) { destroy('pic'); const counts = {}; data.forEach(d => { if(d.pic !== 'Unknown') counts[d.pic] = (counts[d.pic] || 0) + 1; }); let origLabels = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['pic'] = new Chart(document.getElementById('picChart'), { type: 'bar', data: { labels: origLabels.map(l => wrapLabel(l)), datasets: [{ data: origLabels.map(k => counts[k]), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('pic', origLabels[el[0].index]); } } }); }
+    
+    function drawBdTable(data, fmt) {
+        const tbody = document.querySelector('#bdTable tbody'); let html = ''; const stats = {};
+        data.forEach(d => { if(d.bd === 'Unknown') return; if(!stats[d.bd]) stats[d.bd] = { camps: 0, budget: 0, eBud: 0, eSpend: 0, sumR: 0, eCnt: 0 }; stats[d.bd].camps++; stats[d.bd].budget += d.budget; if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { stats[d.bd].eBud += d.budget; stats[d.bd].eSpend += d.spend; stats[d.bd].sumR += d.profitRateOpt; stats[d.bd].eCnt++; } });
+        Object.keys(stats).forEach(bd => { let m = (stats[bd].budget / 0.85) - stats[bd].budget; let p = 0; if (stats[bd].eCnt > 0) { let mlt = 1 - (stats[bd].sumR / stats[bd].eCnt); p = (stats[bd].eBud / (mlt <= 0 ? 1 : mlt)) - stats[bd].eSpend; } stats[bd].totalP = m + p; });
+        Object.keys(stats).sort((a,b) => stats[b].totalP - stats[a].totalP).slice(0, 10).forEach(bd => { 
+            let safeBd = bd.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            html += `<tr class="clickable-row" onclick="applyCrossFilter('bd', '${safeBd}')"><td>${bd}</td><td>${stats[bd].camps}</td><td>฿${fmt(stats[bd].totalP)}</td></tr>`; 
+        });
+        tbody.innerHTML = html; 
+    }
 
     function drawFunnelRadar(data) { destroy('radar'); const values = {}; const allFunnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown'); allFunnels.forEach(f => values[f] = 0); data.forEach(d => { if(d.funnel !== 'Unknown') values[d.funnel] += (funnelMode === 'count' ? 1 : d.spend); }); charts['radar'] = new Chart(document.getElementById('funnelRadarChart'), { type: 'radar', data: { labels: Object.keys(values).map(l => wrapLabel(l)), datasets: [{ data: Object.values(values), backgroundColor: 'rgba(5, 150, 105, 0.2)', borderColor: '#059669', pointBackgroundColor: '#059669' }] }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, scales: { r: { ticks: { display: false } } } } }); }
     function drawBdFunnelChart(data) { destroy('bdFunnel'); const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']; const funnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown'); const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); const datasets = funnels.map((f, i) => ({ label: f, backgroundColor: colors[i % colors.length], data: bds.map(bd => data.filter(d => d.bd === bd && d.funnel === f).length) })); charts['bdFunnel'] = new Chart(document.getElementById('bdFunnelChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); }
