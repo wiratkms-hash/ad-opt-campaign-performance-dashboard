@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V4.8</title>
+    <title>Ad Optimization Performance Dashboard V4.9</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -11,7 +11,7 @@
     <style>
         :root { --bg-color: #f1f5f9; --card-bg: #ffffff; --text-main: #0f172a; --text-muted: #475569; --border-color: #cbd5e1; --primary: #2563eb; --success: #059669; --warning: #d97706; --purple: #8b5cf6; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px 40px; }
-        .header-container { display: flex; justify-between: space-between; align-items: center; margin-bottom: 20px; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         h1 { font-size: 24px; margin: 0; color: var(--text-main); }
         .filter-container { display: flex; gap: 15px; background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 24px; flex-wrap: wrap; }
         .filter-item { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
@@ -60,11 +60,11 @@
 <body>
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V4.8)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V4.9)...</h2>
     </div>
 
-    <div class="header-container" style="display: flex; justify-content: space-between;">
-        <h1>📊 Ad Optimization Team Performance (V4.8)</h1>
+    <div class="header-container">
+        <h1>📊 Ad Optimization Team Performance (V4.9)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -138,11 +138,9 @@
     </div>
 
 <script>
-    // Global Error Handler
     window.onerror = function(message, source, lineno, colno, error) {
         alert("🚨 แจ้งเตือนระบบขัดข้อง!\n" + message + "\n(เกิดปัญหาที่บรรทัด " + lineno + ")\nรบกวนแคปจอนี้ส่งทีมพัฒนาครับ");
-        let spinner = document.getElementById('loading-screen'); if(spinner) spinner.style.display = 'none';
-        return false;
+        let spinner = document.getElementById('loading-screen'); if(spinner) spinner.style.display = 'none'; return false;
     };
     window.onunhandledrejection = function(event) {
         alert("🚨 แจ้งเตือนระบบขัดข้องหลังบ้าน!\nสาเหตุ: " + event.reason);
@@ -188,13 +186,12 @@
 
         parsedTH.shift(); parsedHOC.shift();
         
-        // Mapping แก้ไขคอลัมน์ Client Name: TH -> BI (row[60]), HOC -> AL (row[37])
         parsedTH.forEach(row => {
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
             rawData.push({ 
                 team: 'TH', year: cleanText(row[50]), month: cleanText(row[51]), bd: cleanText(row[53]), 
-                client: cleanText(row[60]), // BI
-                adAccount: cleanText(row[52]), // BA
+                client: cleanText(row[60]), // BI (TH DATA Client Name)
+                adAccount: cleanText(row[52]), // BA (TH DATA Ad Account)
                 funnel: cleanText(row[59]), platform: cleanText(row[7]), content: cleanContentType(row[0]), pic: cleanText(row[1]), 
                 budget: cleanNumber(row[31]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]) 
             });
@@ -203,8 +200,8 @@
             if (!row[5] || row[5].includes('#N/A') || row[5] === '') return;
             rawData.push({ 
                 team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bd: cleanText(row[36]), 
-                client: cleanText(row[37]), // AL
-                adAccount: cleanText(row[35]), // AJ
+                client: cleanText(row[40]), // AO (HOC DATA Client Name) - Corrected
+                adAccount: cleanText(row[35]), // AJ (HOC DATA Ad Account)
                 funnel: cleanText(row[39]), platform: cleanText(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[4]), 
                 budget: cleanNumber(row[12]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]) 
             });
