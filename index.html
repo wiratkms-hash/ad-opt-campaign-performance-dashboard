@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.0</title>
+    <title>Ad Optimization Performance Dashboard V5.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -47,7 +47,8 @@
         .table-container { overflow-x: auto; flex-grow: 1; min-height: 300px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
         th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border-color); word-wrap: break-word; vertical-align: top;}
-        th { font-weight: 600; color: var(--text-muted); background: #f8fafc; position: sticky; top: 0; z-index: 10; }
+        th { font-weight: 600; color: var(--text-muted); background: #f8fafc; position: sticky; top: 0; z-index: 10; user-select: none; }
+        th.sortable:hover { background: #e2e8f0; color: var(--text-main); }
         tr.clickable-row { cursor: pointer; transition: background 0.2s; }
         tr.clickable-row:hover { background-color: #f1f5f9; }
         
@@ -66,11 +67,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.0)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.1)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.0)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.1)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -128,9 +129,9 @@
                             <th style="width: 20%">BD Team</th>
                             <th style="width: 20%">Client Name</th>
                             <th style="width: 25%">Ad Account Name</th>
-                            <th style="width: 10%">Camps</th>
-                            <th style="width: 10%">Budget</th>
-                            <th style="width: 15%">Total Profit</th>
+                            <th class="sortable" onclick="handleSort('camps')" style="width: 10%; cursor: pointer;">Camps <span id="sort-camps"></span></th>
+                            <th class="sortable" onclick="handleSort('budget')" style="width: 10%; cursor: pointer;">Budget <span id="sort-budget">🔽</span></th>
+                            <th class="sortable" onclick="handleSort('totalP')" style="width: 15%; cursor: pointer;">Total Profit <span id="sort-totalP"></span></th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -173,15 +174,18 @@
     let rawData = []; let currentFilteredData = []; let charts = {};
     let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count'; let profitTypeMode = 'count';
     let clientTableDataList = []; let currentClientPage = 1; const clientRowsPerPage = 10;
+    
+    // ตั้งค่าตัวแปรสำหรับการจัดเรียงข้อมูลตาราง
+    let sortCol = 'budget'; 
+    let sortDesc = true; 
 
-    // โครงสร้าง Config และป้ายชื่อปุ่ม Filter
     let filterConfig = {
         team: { label: 'Teams', selected: [], allValues: [] },
         year: { label: 'Years', selected: [], allValues: [] },
         month: { label: 'Months', selected: [], allValues: [] },
         bd: { label: 'BD Teams', selected: [], allValues: [] },
         client: { label: 'Clients', selected: [], allValues: [] },
-        pic: { label: 'PICs', selected: [], allValues: [] }, // ดึงมิติ PIC เข้าสู่ตัวกรองหลัก
+        pic: { label: 'PICs', selected: [], allValues: [] },
         profitType: { label: 'Types', selected: [], allValues: [] },
         funnel: { label: 'Funnels', selected: [] , allValues: [] },
         platform: { label: 'Platforms', selected: [], allValues: [] },
@@ -202,7 +206,6 @@
 
         parsedTH.shift(); parsedHOC.shift();
         
-        // Mapping ข้อมูลเป๊ะๆ ตามคำขอ (TH PIC = B/Index 1 , HOC PIC = E/Index 4)
         parsedTH.forEach(row => {
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
             rawData.push({ 
@@ -210,7 +213,7 @@
                 client: cleanText(row[60]), // BI
                 adAccount: cleanText(row[52]), // BA
                 funnel: cleanText(row[59]), platform: cleanText(row[7]), content: cleanContentType(row[0]), 
-                pic: cleanText(row[1]), // คอลัมน์ B คือ PIC
+                pic: cleanText(row[1]), // B
                 budget: cleanNumber(row[31]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]) 
             });
         });
@@ -221,7 +224,7 @@
                 client: cleanText(row[40]), // AO
                 adAccount: cleanText(row[35]), // AJ
                 funnel: cleanText(row[39]), platform: cleanText(row[8]), content: cleanContentType(row[0]), 
-                pic: cleanText(row[4]), // คอลัมน์ E คือ PIC
+                pic: cleanText(row[4]), // E
                 budget: cleanNumber(row[12]), spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]) 
             });
         });
@@ -230,15 +233,13 @@
         document.getElementById('loading-screen').style.display = 'none';
     }
 
-    // --- ปรับปรุงระบบกล่อง Filter สไตล์ใหม่ ติ๊กถูกครบถ้วนตั้งแต่เริ่มต้น ---
     function setupFilters() {
         Object.keys(filterConfig).forEach(fid => {
             let unique = [...new Set(rawData.map(item => item[fid]))].filter(val => val !== 'Unknown').sort();
             filterConfig[fid].allValues = unique;
-            filterConfig[fid].selected = [...unique]; // บังคับติ๊กเลือกครบทั้งหมดตั้งแต่เริ่มต้นแรกรันหน้าเว็บ
+            filterConfig[fid].selected = [...unique];
             
             let listHtml = '';
-            // เงื่อนไขแทรกกล่องพิมพ์ค้นหา (Search input) เฉพาะที่กล่อง Client Name ตามรีเควสต์
             if (fid === 'client') {
                 listHtml += `<div style="padding: 8px; position: sticky; top: 0; background: white; z-index: 11; border-bottom: 1px solid var(--border-color);">
                     <input type="text" id="search-client" placeholder="🔍 ค้นหาชื่อลูกค้า..." oninput="filterClientList(this)" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box;">
@@ -257,7 +258,6 @@
 
     function toggleMs(fid) { let list = document.getElementById('list-' + fid); let isActive = list.classList.contains('active'); document.querySelectorAll('.ms-list').forEach(l => l.classList.remove('active')); if (!isActive) list.classList.add('active'); }
     
-    // พิมพ์กรองรายชื่อลูกค้าในกล่อง
     function filterClientList(input) {
         let filter = input.value.toUpperCase();
         let labels = document.querySelectorAll('.item-label-client');
@@ -267,7 +267,6 @@
         });
     }
 
-    // Logic จัดการปุ่ม "Select All"
     function handleAllCheck(fid, el) {
         let checkboxes = document.querySelectorAll(`.chk-${fid}`);
         if (el.checked) {
@@ -280,7 +279,6 @@
         updateFilterHeader(fid); updateDashboard();
     }
 
-    // Logic จัดการกรณีติ๊กเข้า/ติ๊กออกทีละช่องตัวเลือกย่อย
     function handleIndividualCheck(fid, el) {
         let checkboxes = document.querySelectorAll(`.chk-${fid}`);
         let allCb = document.getElementById(`all-${fid}`);
@@ -291,7 +289,6 @@
         } else {
             filterConfig[fid].selected = filterConfig[fid].selected.filter(v => v !== val);
         }
-        // ถ้าเลือกครบถ้วน ปลุกปุ่ม Select All ให้ติ๊กตามอัตโนมัติ
         allCb.checked = (filterConfig[fid].selected.length === filterConfig[fid].allValues.length);
         updateFilterHeader(fid); updateDashboard();
     }
@@ -315,7 +312,6 @@
         updateDashboard();
     }
 
-    // เจาะลึก Cross-Filter คลิกแท่งกราฟ/โดนัท/ตาราง เพื่อล็อคเป้ากรองมิตินั้นแบบเดี่ยว
     function applyCrossFilter(fid, value) {
         let isIsolated = (filterConfig[fid].selected.length === 1 && filterConfig[fid].selected[0] === value);
         let checkboxes = document.querySelectorAll(`.chk-${fid}`); let allCb = document.getElementById(`all-${fid}`);
@@ -331,7 +327,6 @@
     }
 
     function updateDashboard() {
-        // Logic กรองคำนวณสอดคล้องสัมพันธ์แบบ Multi-select คอนเฟิร์มความถูกต้อง
         currentFilteredData = rawData.filter(d => 
             ((filterConfig.team.selected.length === filterConfig.team.allValues.length) || filterConfig.team.selected.includes(d.team)) &&
             ((filterConfig.year.selected.length === filterConfig.year.allValues.length) || filterConfig.year.selected.includes(d.year)) &&
@@ -363,22 +358,36 @@
         prepareClientTableData(currentFilteredData, fmt);
     }
 
-    function toggleClientPage(step) { const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); }
-    function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
-    function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
-    function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
-    function toggleProfitType() { profitTypeMode = profitTypeMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleProfitType').innerText = profitTypeMode === 'count' ? 'View: Count' : 'View: Budget'; drawProfitTypeChart(currentFilteredData); }
-    function destroy(name) { if(charts[name]) charts[name].destroy(); }
-    const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
+    // ฟังก์ชั่นจัดเรียงข้อมูลเมื่อกดที่หัวตาราง
+    function handleSort(col) {
+        if (sortCol === col) {
+            sortDesc = !sortDesc; // สลับจากมากไปน้อยเป็นน้อยไปมาก
+        } else {
+            sortCol = col;
+            sortDesc = true; // ค่าเริ่มต้นถ้าเปลี่ยนคอลัมน์คือมากไปน้อย
+        }
+        applySort();
+        updateSortIcons();
+        currentClientPage = 1;
+        renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n));
+    }
 
-    function drawPicChart(data) { destroy('pic'); const counts = {}; data.forEach(d => counts[d.pic] = (counts[d.pic] || 0) + 1); let origLabels = Object.keys(counts).filter(k => k!=='Unknown'); charts['pic'] = new Chart(document.getElementById('picChart'), { type: 'bar', data: { labels: origLabels.map(l => wrapLabel(l)), datasets: [{ data: origLabels.map(k => counts[k]), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('pic', origLabels[el[0].index]); } } }); }
-    
-    function drawBdTable(data, fmt) {
-        const tbody = document.querySelector('#bdTable tbody'); let html = ''; const stats = {};
-        data.forEach(d => { if(d.bd === 'Unknown') return; if(!stats[d.bd]) stats[d.bd] = { camps: 0, budget: 0, eBud: 0, eSpend: 0, sumR: 0, eCnt: 0 }; stats[d.bd].camps++; stats[d.bd].budget += d.budget; if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { stats[d.bd].eBud += d.budget; stats[d.bd].eSpend += d.spend; stats[d.bd].sumR += d.profitRateOpt; stats[d.bd].eCnt++; } });
-        Object.keys(stats).forEach(bd => { let m = (stats[bd].budget / 0.85) - stats[bd].budget; let p = 0; if (stats[bd].eCnt > 0) { let mlt = 1 - (stats[bd].sumR / stats[bd].eCnt); p = (stats[bd].eBud / (mlt <= 0 ? 1 : mlt)) - stats[bd].eSpend; } stats[bd].totalP = m + p; });
-        Object.keys(stats).sort((a,b) => stats[b].totalP - stats[a].totalP).slice(0, 10).forEach(bd => { let safeBd = bd.replace(/'/g, "\\'").replace(/"/g, "&quot;"); html += `<tr class="clickable-row" onclick="applyCrossFilter('bd', '${safeBd}')"><td>${bd}</td><td>${stats[bd].camps}</td><td>฿${fmt(stats[bd].totalP)}</td></tr>`; });
-        tbody.innerHTML = html; 
+    // อัปเดตสัญลักษณ์ลูกศรที่หัวตาราง
+    function updateSortIcons() {
+        document.getElementById('sort-camps').innerText = sortCol === 'camps' ? (sortDesc ? '🔽' : '🔼') : '';
+        document.getElementById('sort-budget').innerText = sortCol === 'budget' ? (sortDesc ? '🔽' : '🔼') : '';
+        document.getElementById('sort-totalP').innerText = sortCol === 'totalP' ? (sortDesc ? '🔽' : '🔼') : '';
+    }
+
+    // ดำเนินการจัดเรียงอาเรย์ข้อมูล
+    function applySort() {
+        clientTableDataList.sort((a, b) => {
+            let valA = a[sortCol];
+            let valB = b[sortCol];
+            if (valA < valB) return sortDesc ? 1 : -1;
+            if (valA > valB) return sortDesc ? -1 : 1;
+            return 0;
+        });
     }
 
     function prepareClientTableData(data, fmt) {
@@ -395,7 +404,11 @@
             if (item.eCnt > 0) { let mlt = 1 - (item.sumR / item.eCnt); p = (item.eBud / (mlt <= 0 ? 1 : mlt)) - item.eSpend; }
             item.totalP = m + p; return item;
         });
-        clientTableDataList.sort((a, b) => b.budget - a.budget); currentClientPage = 1; renderClientTablePage(fmt);
+        
+        applySort(); // เรียกใช้การจัดเรียงทุกครั้งที่มีการประมวลผลข้อมูลใหม่
+        updateSortIcons();
+        currentClientPage = 1; 
+        renderClientTablePage(fmt);
     }
 
     function renderClientTablePage(fmt) {
@@ -412,7 +425,6 @@
     }
     function changeClientPage(step) { const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); }
 
-    // ปิดการโชว์ตัวเลข DataLabels ให้กราฟเรดาร์และกราฟเส้นตามสั่ง
     function drawFunnelRadar(data) { destroy('radar'); const values = {}; const allFunnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown'); allFunnels.forEach(f => values[f] = 0); data.forEach(d => { if(d.funnel !== 'Unknown') values[d.funnel] += (funnelMode === 'count' ? 1 : d.spend); }); charts['radar'] = new Chart(document.getElementById('funnelRadarChart'), { type: 'radar', data: { labels: Object.keys(values).map(l => wrapLabel(l)), datasets: [{ data: Object.values(values), backgroundColor: 'rgba(5, 150, 105, 0.2)', borderColor: '#059669', pointBackgroundColor: '#059669' }] }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, scales: { r: { ticks: { display: false } } } } }); }
     function drawBdFunnelChart(data) { destroy('bdFunnel'); const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']; const funnels = [...new Set(data.map(d => d.funnel))].filter(f => f!=='Unknown'); const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); const datasets = funnels.map((f, i) => ({ label: f, backgroundColor: colors[i % colors.length], data: bds.map(bd => data.filter(d => d.bd === bd && d.funnel === f).length) })); charts['bdFunnel'] = new Chart(document.getElementById('bdFunnelChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); }
     function drawBdProfitChart(data) { destroy('bdProfit'); const types = ['Profitable', 'Transparent']; const colors = ['#059669', '#64748b']; const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); const datasets = types.map((t, i) => ({ label: t, backgroundColor: colors[i], data: bds.map(bd => { let camps = data.filter(d => d.bd === bd && d.profitType === t); return bdProfitMode === 'count' ? camps.length : camps.reduce((s, c) => s + c.budget, 0); }) })); charts['bdProfit'] = new Chart(document.getElementById('bdProfitChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); }
