@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.4 (Gross Budget)</title>
+    <title>Ad Optimization Performance Dashboard V5.5 (Stable & Clean)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -67,11 +67,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.4)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.5)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.4)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.5)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -99,7 +99,7 @@
     </div>
 
     <div class="chart-row row-3-cols">
-        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Workload by PIC</h3></div><div class="chart-body"><canvas id="picChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-body"><canvas id="picChart"></canvas></div></div>
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">BD Team (Total Profit)</h3></div><div class="table-container"><table id="bdTable"><thead><tr><th style="width:45%">BD Team</th><th style="width:25%">Camps</th><th style="width:30%">Total Profit</th></tr></thead><tbody></tbody></table></div></div>
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Campaign Funnel</h3><button class="btn-toggle btn-toggle-alt" id="btnToggleFunnel" onclick="toggleFunnel()">View: Count</button></div><div class="chart-body"><canvas id="funnelRadarChart"></canvas></div></div>
     </div>
@@ -193,8 +193,18 @@
     function cleanNumber(val) { if (!val || val.toString().includes('#N/A')) return 0; return parseFloat(val.toString().replace(/[฿$,\s]/g, '')) || 0; }
     function cleanPercent(val) { if (!val || val.toString().includes('#N/A')) return 0; let str = val.toString().replace(/[,\s]/g, ''); if (str.includes('%')) return parseFloat(str.replace('%', '')) / 100; return parseFloat(str) || 0; }
     function cleanText(val) { return (!val || val.toString().includes('#N/A') || val.toString().trim() === '') ? 'Unknown' : val.toString().trim(); }
-    function cleanContentType(val) { if (!val) return 'Unknown'; let txt = val.toString().trim().toUpperCase(); if (txt === 'KOL') return 'KOL'; if (txt === 'NON-KOL' || txt === 'NON KOL') return 'Non-KOL'; return 'Unknown'; }
+    function cleanContentType(val) { if (!val) return 'Unknown'; let txt = val.toString().trim().toUpperCase(); if (txt === 'KOL') return 'KOL'; if (txt === 'NON-KOL' || txt === 'NON GOLD' || txt === 'NON KOL') return 'Non-KOL'; return 'Unknown'; }
     function wrapLabel(text, maxLength = 12) { const words = text.split(' '); let lines = [], currentLine = words[0] || ''; for (let i = 1; i < words.length; i++) { if (currentLine.length + words[i].length + 1 <= maxLength) currentLine += " " + words[i]; else { lines.push(currentLine); currentLine = words[i]; } } if(currentLine) lines.push(currentLine); return lines; }
+
+    // ฟังก์ชันจัดกลุ่มแพลตฟอร์มเครือ Google เข้าด้วยกัน
+    function standardizePlatform(val) {
+        let txt = cleanText(val);
+        let upper = txt.toUpperCase();
+        if (upper === 'DEMAND GEN' || upper === 'GDN' || upper === 'GOOGLE' || upper === 'PMAX' || upper === 'SEM' || upper === 'YOUTUBE') {
+            return 'Google';
+        }
+        return txt;
+    }
 
     async function fetchRealData() {
         document.getElementById('loading-text').innerText = "กำลังดาวน์โหลดข้อมูลจาก Google Sheets...";
@@ -209,7 +219,9 @@
             let netBudget = cleanNumber(row[31]);
             rawData.push({ 
                 team: 'TH', year: cleanText(row[50]), month: cleanText(row[51]), bd: cleanText(row[53]), 
-                client: cleanText(row[60]), adAccount: cleanText(row[52]), funnel: cleanText(row[59]), platform: cleanText(row[7]), content: cleanContentType(row[0]), pic: cleanText(row[1]), 
+                client: cleanText(row[60]), adAccount: cleanText(row[52]), funnel: cleanText(row[59]), 
+                platform: standardizePlatform(row[7]), 
+                content: cleanContentType(row[0]), pic: cleanText(row[1]), 
                 budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]) 
             });
         });
@@ -218,7 +230,9 @@
             let netBudget = cleanNumber(row[12]);
             rawData.push({ 
                 team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bd: cleanText(row[36]), 
-                client: cleanText(row[40]), adAccount: cleanText(row[35]), funnel: cleanText(row[39]), platform: cleanText(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[4]), 
+                client: cleanText(row[40]), adAccount: cleanText(row[35]), funnel: cleanText(row[39]), 
+                platform: standardizePlatform(row[8]), 
+                content: cleanContentType(row[0]), pic: cleanText(row[4]), 
                 budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]) 
             });
         });
@@ -320,7 +334,6 @@
         updateFilterHeader(fid); updateDashboard();
     }
 
-    // --- อัปเดตโครงสร้างระบบกรองและการคำนวณแบบ Gross Budget V5.4 ---
     function updateDashboard() {
         currentFilteredData = rawData.filter(d => 
             ((filterConfig.team.selected.length === filterConfig.team.allValues.length) || filterConfig.team.selected.includes(d.team)) &&
@@ -340,11 +353,7 @@
         currentFilteredData.forEach(d => { 
             tGrossBudget += d.grossBudget; 
             tSpend += d.spend;
-            
-            // 1. Mgmt Fee คือ 15% ของยอด Gross
             totalMgmtFee += (d.grossBudget * 0.15);
-            
-            // 2. Markup คิดเฉพาะ Profitable รันจบ = ยอดในชีท (85%) - ยอดใช้จริง (Spend)
             if (d.profitType === 'Profitable' && d.datePacing >= 0.99) {
                 totalEstProfit += (d.budget - d.spend);
             }
@@ -411,7 +420,7 @@
             if (!stats[key]) stats[key] = { bd: d.bd, client: d.client, adAccount: d.adAccount, camps: 0, budget: 0, totalP: 0 };
             
             stats[key].camps++; 
-            stats[key].budget += d.grossBudget; // โชว์ยอดเต็ม 100% ในตาราง
+            stats[key].budget += d.grossBudget; 
             
             let mFee = d.grossBudget * 0.15;
             let markup = (d.profitType === 'Profitable' && d.datePacing >= 0.99) ? (d.budget - d.spend) : 0;
