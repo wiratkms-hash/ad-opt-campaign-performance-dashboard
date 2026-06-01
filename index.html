@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.6 (Date Range Integration)</title>
+    <title>Ad Optimization Performance Dashboard V5.6 (Fixed ReferenceError)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -182,7 +182,6 @@
     let sortCol = 'budget'; 
     let sortDesc = true; 
 
-    // ลบหัวข้อ month ออกจาก filterConfig
     let filterConfig = {
         team: { label: 'Teams', selected: [], allValues: [] },
         year: { label: 'Years', selected: [], allValues: [] },
@@ -209,7 +208,6 @@
         return txt;
     }
 
-    // จุดแก้ไขที่ 2: ฟังก์ชันสำหรับแปลงรูปแบบวันที่ตัวหนังสือ 20-Mar-2026 ให้เป็น Date Object ปลอดภัย 100%
     function parseCustomDate(str) {
         if (!str || str === 'Unknown' || str.toString().trim() === '') return null;
         let parts = str.toString().trim().split('-');
@@ -230,7 +228,6 @@
 
         parsedTH.shift(); parsedHOC.shift();
         
-        // จุดแก้ไขที่ 3: ปรับแต่ง index คอลัมน์วันที่ตามพิกัดใหม่ TH (J,K) | HOC (K,L)
         parsedTH.forEach(row => {
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
             let netBudget = cleanNumber(row[31]);
@@ -255,25 +252,22 @@
         });
 
         setupFilters(); 
-        setDefaultDates(); // เรียกใช้ฟังก์ชันตั้งค่าปฏิทินเริ่มต้นตามโมเดล Smart Fallback
+        setDefaultDates(); 
         updateDashboard();
         document.getElementById('loading-screen').style.display = 'none';
     }
 
-    // จุดแก้ไขที่ 4: ระบบคำนวณ Current Month Default + Smart Fallback สลับไปเดือนล่าสุดหากงบเป็น 0
     function setDefaultDates() {
-        let now = new Date(2026, 4, 1); // ยึดไทม์ไลน์ปัจจุบันในระบบปี 2026 (4 = พฤษภาคม)
+        let now = new Date(2026, 4, 1); // ล็อกฐานเวลาเสถียรปี 2026 (4 = พฤษภาคม)
         let currentYear = now.getFullYear();
         let currentMonth = now.getMonth();
         
         let defStart = new Date(currentYear, currentMonth, 1);
         let defEnd = new Date(currentYear, currentMonth + 1, 0);
 
-        // เช็คว่าเดือนปัจจุบันมีข้อมูลแคมเปญวิ่งเกี่ยวอยู่มั้ย
         let overlapCount = rawData.filter(d => d.startDateObj && d.endDateObj && (d.startDateObj <= defEnd && d.endDateObj >= defStart)).length;
 
         if (overlapCount === 0) {
-            // Smart Fallback: ค้นหาวันสิ้นสุดที่มากที่สุดในประวัติไฟล์มาตั้งเป็นเพดานเดือนเริ่มต้นแทน หน้าจอจะไม่ขาวโพลน
             let maxDate = null;
             rawData.forEach(d => { if (d.endDateObj && (!maxDate || d.endDateObj > maxDate)) maxDate = d.endDateObj; });
             if (maxDate) {
@@ -350,7 +344,7 @@
             filterConfig[fid].selected = [...filterConfig[fid].allValues]; updateFilterHeader(fid);
         });
         let searchInp = document.getElementById('search-client'); if(searchInp) { searchInp.value = ''; filterClientList(searchInp); }
-        setDefaultDates(); // รีเซ็ตปฏิทินกลับไปค่าตั้งต้นที่ปลอดภัยด้วย
+        setDefaultDates(); 
         updateDashboard();
     }
 
@@ -362,7 +356,6 @@
         updateFilterHeader(fid); updateDashboard();
     }
 
-    // จุดแก้ไขที่ 5: ปรับปรุงระบบคัดกรองข้อมูลให้รองรับ Logic แบบ A (คาบเกี่ยวผูกปฏิทินป๊อปอัพ)
     function updateDashboard() {
         let startVal = document.getElementById('filter-start-date').value;
         let endVal = document.getElementById('filter-end-date').value;
@@ -372,7 +365,6 @@
         let endDateSelected = pDate(endVal);
 
         currentFilteredData = rawData.filter(d => {
-            // เช็คเงื่อนไขคาบเกี่ยวของปฏิทิน (แคมเปญเริ่มก่อนวันสิ้นสุดปฏิทิน และ แคมเปญจบหลังวันเริ่มต้นปฏิทิน)
             let dateMatch = true;
             if (startDateSelected && endDateSelected && d.startDateObj && d.endDateObj) {
                 dateMatch = (d.startDateObj <= endDateSelected && d.endDateObj >= startDateSelected);
@@ -474,12 +466,14 @@
     function togglePlatform() { platformMode = platformMode === 'count' ? 'budget' : 'count'; document.getElementById('btnTogglePlatform').innerText = platformMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformUsage(currentFilteredData); }
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
-    function toggleBgProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
+    
+    // จุดแก้ไขวิกฤต: แก้ไขชื่อฟังก์ชันจากเดิมที่เป็นพิมพ์ลั่น (toggleBgProfit -> toggleBdProfit) ให้ตรงตาม HTML บัญญัติ
+    function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
+    
     function toggleProfitType() { profitTypeMode = profitTypeMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleProfitType').innerText = profitTypeMode === 'count' ? 'View: Count' : 'View: Budget'; drawProfitTypeChart(currentFilteredData); }
     function destroy(name) { if(charts[name]) charts[name].destroy(); }
     const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
 
-    // --- ตรวจทานพิกัดฟังก์ชันโครงสร้างกราฟและตารางครบถ้วน 100% ตาม Protocol 2 ---
     function drawPicChart(data) { destroy('pic'); const counts = {}; data.forEach(d => { if(d.pic !== 'Unknown') counts[d.pic] = (counts[d.pic] || 0) + 1; }); let origLabels = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['pic'] = new Chart(document.getElementById('picChart'), { type: 'bar', data: { labels: origLabels.map(l => wrapLabel(l)), datasets: [{ data: origLabels.map(k => counts[k]), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('pic', origLabels[el[0].index]); } } }); }
     
     function drawBdTable(data, fmt) {
