@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.6 (Fixed ReferenceError)</title>
+    <title>Ad Optimization Performance Dashboard V5.7 (AI & Enhanced Tables)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -63,27 +63,42 @@
         #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
         .spinner { border: 6px solid #f3f3f3; border-top: 6px solid #2563eb; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* AI Floating Chat Widget Styles */
+        .ai-chat-toggle { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; border: none; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; z-index: 1000; transition: transform 0.2s; }
+        .ai-chat-toggle:hover { transform: scale(1.05); }
+        .ai-chat-window { position: fixed; bottom: 90px; right: 20px; width: 380px; height: 500px; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 1000; border: 1px solid var(--border-color); overflow: hidden; }
+        .ai-chat-window.active { display: flex; }
+        .ai-chat-header { background: #0f172a; color: white; padding: 12px 15px; font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 5px; }
+        .ai-chat-header input { background: #334155; border: none; color: white; padding: 5px 8px; border-radius: 4px; font-size: 11px; width: 150px; outline: none; }
+        .ai-chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 10px; background: #f8fafc; }
+        .msg { padding: 8px 12px; border-radius: 8px; max-width: 85%; word-wrap: break-word; line-height: 1.4; }
+        .msg.user { background: #e2e8f0; align-self: flex-end; color: var(--text-main); }
+        .msg.ai { background: #dbeafe; align-self: flex-start; color: #1e3a8a; white-space: pre-line; }
+        .ai-chat-input-area { padding: 10px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; background: white; }
+        .ai-chat-input-area input { flex-grow: 1; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; outline: none; }
+        .ai-chat-input-area button { background: var(--primary); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-ai-summary { background: #8b5cf6; color: white; width: 100%; padding: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
+        .btn-ai-summary:hover { background: #7c3aed; }
     </style>
 </head>
 <body>
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.6)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.7)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.6)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.7)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
     <div class="filter-container">
         <div class="filter-item"><label>Ad Opt Team</label><div class="ms-container" id="ms-team"><div class="ms-header" onclick="toggleMs('team')">All Teams</div><div class="ms-list" id="list-team"></div></div></div>
         <div class="filter-item"><label>Year</label><div class="ms-container" id="ms-year"><div class="ms-header" onclick="toggleMs('year')">All Years</div><div class="ms-list" id="list-year"></div></div></div>
-        
         <div class="filter-item"><label>📅 Campaign Start Date</label><input type="date" id="filter-start-date" onchange="updateDashboard()"></div>
         <div class="filter-item"><label>📅 Campaign End Date</label><input type="date" id="filter-end-date" onchange="updateDashboard()"></div>
-        
         <div class="filter-item"><label>BD Team</label><div class="ms-container" id="ms-bd"><div class="ms-header" onclick="toggleMs('bd')">All BD Teams</div><div class="ms-list" id="list-bd"></div></div></div>
         <div class="filter-item"><label>Client Name</label><div class="ms-container" id="ms-client"><div class="ms-header" onclick="toggleMs('client')">All Clients</div><div class="ms-list" id="list-client"></div></div></div>
         <div class="filter-item"><label>Ad Opt PIC</label><div class="ms-container" id="ms-pic"><div class="ms-header" onclick="toggleMs('pic')">All PICs</div><div class="ms-list" id="list-pic"></div></div></div>
@@ -105,7 +120,25 @@
 
     <div class="chart-row row-3-cols">
         <div class="chart-card"><div class="chart-body"><canvas id="picChart"></canvas></div></div>
-        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">BD Team (Total Profit)</h3></div><div class="table-container"><table id="bdTable"><thead><tr><th style="width:45%">BD Team</th><th style="width:25%">Camps</th><th style="width:30%">Total Profit</th></tr></thead><tbody></tbody></table></div></div>
+        
+        <div class="chart-card">
+            <div class="chart-header"><h3 class="chart-title">BD Team Performance Snapshot</h3></div>
+            <div class="table-container">
+                <table id="bdTable">
+                    <thead>
+                        <tr>
+                            <th style="width:26%">BD Team</th>
+                            <th style="width:12%">Camps</th>
+                            <th style="width:22%">Gross Budget</th>
+                            <th style="width:22%">Total Profit</th>
+                            <th style="width:18%">Profit/Camp</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Campaign Funnel</h3><button class="btn-toggle btn-toggle-alt" id="btnToggleFunnel" onclick="toggleFunnel()">View: Count</button></div><div class="chart-body"><canvas id="funnelRadarChart"></canvas></div></div>
     </div>
 
@@ -131,12 +164,13 @@
                 <table id="clientTable">
                     <thead>
                         <tr>
-                            <th style="width: 20%">BD Team</th>
-                            <th style="width: 20%">Client Name</th>
-                            <th style="width: 25%">Ad Account Name</th>
-                            <th class="sortable" onclick="handleSort('camps')" style="width: 10%; cursor: pointer;">Camps <span id="sort-camps"></span></th>
-                            <th class="sortable" onclick="handleSort('budget')" style="width: 10%; cursor: pointer;">Gross Budget <span id="sort-budget">🔽</span></th>
-                            <th class="sortable" onclick="handleSort('totalP')" style="width: 15%; cursor: pointer;">Total Profit <span id="sort-totalP"></span></th>
+                            <th style="width: 14%">BD Team</th>
+                            <th style="width: 15%">Client Name</th>
+                            <th style="width: 20%">Ad Account Name</th>
+                            <th class="sortable" onclick="handleSort('camps')" style="width: 8%; cursor: pointer;">Camps <span id="sort-camps"></span></th>
+                            <th class="sortable" onclick="handleSort('budget')" style="width: 15%; cursor: pointer;">Gross Budget <span id="sort-budget">🔽</span></th>
+                            <th class="sortable" onclick="handleSort('totalP')" style="width: 14%; cursor: pointer;">Total Profit <span id="sort-totalP"></span></th>
+                            <th style="width: 14%">Profit/Camp</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -147,6 +181,22 @@
                 <span id="clientPageInfo" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Page 1 of 1</span>
                 <button class="btn-toggle" id="btnNextPage" onclick="changeClientPage(1)">Next</button>
             </div>
+        </div>
+    </div>
+
+    <button class="ai-chat-toggle" onclick="toggleAiChat()">💬</button>
+    <div class="ai-chat-window" id="aiChatWindow">
+        <div class="ai-chat-header">
+            <span>🤖 Gemini AI Co-Pilot</span>
+            <input type="password" id="ai-api-key" placeholder="วาง Gemini API Key ที่นี่..." onchange="saveApiKey(this.value)">
+        </div>
+        <button class="btn-ai-summary" onclick="generateAiSummary()">🪄 สรุปภาพรวมแดชบอร์ด ณ ตอนนี้</button>
+        <div class="ai-chat-messages" id="aiChatMessages">
+            <div class="msg ai">สวัสดีครับจารย์! ผมคือผู้ช่วยวิเคราะห์ข้อมูลประจำทีม ต้องการให้ผมช่วยสรุป Insight ของข้อมูลที่คัดกรองอยู่ตอนนี้ หรือสอบถามประเด็นไหน พิมพ์บอกมาได้เลยครับ!</div>
+        </div>
+        <div class="ai-chat-input-area">
+            <input type="text" id="aiUserQuery" placeholder="พิมพ์คำถามถึงข้อมูลแดชบอร์ด..." onkeydown="if(event.key==='Enter') sendAiMessage()">
+            <button onclick="sendAiMessage()">ส่ง</button>
         </div>
     </div>
 
@@ -210,13 +260,9 @@
 
     function parseCustomDate(str) {
         if (!str || str === 'Unknown' || str.toString().trim() === '') return null;
-        let parts = str.toString().trim().split('-');
-        if (parts.length !== 3) return null;
-        let day = parseInt(parts[0]);
-        let monStr = parts[1].toLowerCase().substring(0, 3);
-        let year = parseInt(parts[2]);
-        let month = monthMap[monStr];
-        if (isNaN(day) || month === undefined || isNaN(year)) return null;
+        let parts = str.toString().trim().split('-'); if (parts.length !== 3) return null;
+        let day = parseInt(parts[0]); let monStr = parts[1].toLowerCase().substring(0, 3); let year = parseInt(parts[2]);
+        let month = monthMap[monStr]; if (isNaN(day) || month === undefined || isNaN(year)) return null;
         return new Date(year, month, day);
     }
 
@@ -252,37 +298,24 @@
         });
 
         setupFilters(); 
-        setDefaultDates(); 
+        setDefaultDates();
+        loadSavedApiKey(); // โหลดรหัสลับ Gemini ที่เซฟไว้ในเครื่อง
         updateDashboard();
         document.getElementById('loading-screen').style.display = 'none';
     }
 
     function setDefaultDates() {
-        let now = new Date(2026, 4, 1); // ล็อกฐานเวลาเสถียรปี 2026 (4 = พฤษภาคม)
-        let currentYear = now.getFullYear();
-        let currentMonth = now.getMonth();
-        
-        let defStart = new Date(currentYear, currentMonth, 1);
-        let defEnd = new Date(currentYear, currentMonth + 1, 0);
-
+        let now = new Date(2026, 4, 1); // ล็อกไทม์ไลน์ระบบปี 2026 
+        let currentYear = now.getFullYear(); let currentMonth = now.getMonth();
+        let defStart = new Date(currentYear, currentMonth, 1); let defEnd = new Date(currentYear, currentMonth + 1, 0);
         let overlapCount = rawData.filter(d => d.startDateObj && d.endDateObj && (d.startDateObj <= defEnd && d.endDateObj >= defStart)).length;
 
         if (overlapCount === 0) {
             let maxDate = null;
             rawData.forEach(d => { if (d.endDateObj && (!maxDate || d.endDateObj > maxDate)) maxDate = d.endDateObj; });
-            if (maxDate) {
-                currentYear = maxDate.getFullYear(); currentMonth = maxDate.getMonth();
-                defStart = new Date(currentYear, currentMonth, 1); defEnd = new Date(currentYear, currentMonth + 1, 0);
-            }
+            if (maxDate) { currentYear = maxDate.getFullYear(); currentMonth = maxDate.getMonth(); defStart = new Date(currentYear, currentMonth, 1); defEnd = new Date(currentYear, currentMonth + 1, 0); }
         }
-
-        const formatToInput = (date) => {
-            let y = date.getFullYear();
-            let m = String(date.getMonth() + 1).padStart(2, '0');
-            let d = String(date.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
-        };
-
+        const formatToInput = (date) => { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; };
         document.getElementById('filter-start-date').value = formatToInput(defStart);
         document.getElementById('filter-end-date').value = formatToInput(defEnd);
     }
@@ -290,21 +323,13 @@
     function setupFilters() {
         Object.keys(filterConfig).forEach(fid => {
             let unique = [...new Set(rawData.map(item => item[fid]))].filter(val => val !== 'Unknown').sort();
-            filterConfig[fid].allValues = unique;
-            filterConfig[fid].selected = [...unique];
-            
+            filterConfig[fid].allValues = unique; filterConfig[fid].selected = [...unique];
             let listHtml = '';
             if (fid === 'client') {
-                listHtml += `<div style="padding: 8px; position: sticky; top: 0; background: white; z-index: 11; border-bottom: 1px solid var(--border-color);">
-                    <input type="text" id="search-client" placeholder="🔍 ค้นหาชื่อลูกค้า..." oninput="filterClientList(this)" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box;">
-                </div>`;
+                listHtml += `<div style="padding: 8px; position: sticky; top: 0; background: white; z-index: 11; border-bottom: 1px solid var(--border-color);"><input type="text" id="search-client" placeholder="🔍 ค้นหาชื่อลูกค้า..." oninput="filterClientList(this)" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box;"></div>`;
             }
-
             listHtml += `<label><input type="checkbox" value="All" id="all-${fid}" onchange="handleAllCheck('${fid}', this)" checked> <b>Select All</b></label>`;
-            unique.forEach(val => { 
-                let safeVal = val.replace(/"/g, "&quot;");
-                listHtml += `<label class="item-label-${fid}"><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label>`; 
-            });
+            unique.forEach(val => { let safeVal = val.replace(/"/g, "&quot;"); listHtml += `<label class="item-label-${fid}"><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label>`; });
             document.getElementById('list-' + fid).innerHTML = listHtml;
         });
         document.addEventListener('click', e => { if (!e.target.closest('.ms-container')) document.querySelectorAll('.ms-list').forEach(l => l.classList.remove('active')); });
@@ -344,8 +369,7 @@
             filterConfig[fid].selected = [...filterConfig[fid].allValues]; updateFilterHeader(fid);
         });
         let searchInp = document.getElementById('search-client'); if(searchInp) { searchInp.value = ''; filterClientList(searchInp); }
-        setDefaultDates(); 
-        updateDashboard();
+        setDefaultDates(); updateDashboard();
     }
 
     function applyCrossFilter(fid, value) {
@@ -357,18 +381,13 @@
     }
 
     function updateDashboard() {
-        let startVal = document.getElementById('filter-start-date').value;
-        let endVal = document.getElementById('filter-end-date').value;
-        
+        let startVal = document.getElementById('filter-start-date').value; let endVal = document.getElementById('filter-end-date').value;
         let pDate = (val) => { if(!val) return null; let p = val.split('-'); return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])); };
-        let startDateSelected = pDate(startVal);
-        let endDateSelected = pDate(endVal);
+        let startDateSelected = pDate(startVal); let endDateSelected = pDate(endVal);
 
         currentFilteredData = rawData.filter(d => {
             let dateMatch = true;
-            if (startDateSelected && endDateSelected && d.startDateObj && d.endDateObj) {
-                dateMatch = (d.startDateObj <= endDateSelected && d.endDateObj >= startDateSelected);
-            }
+            if (startDateSelected && endDateSelected && d.startDateObj && d.endDateObj) { dateMatch = (d.startDateObj <= endDateSelected && d.endDateObj >= startDateSelected); }
             return dateMatch &&
                 ((filterConfig.team.selected.length === filterConfig.team.allValues.length) || filterConfig.team.selected.includes(d.team)) &&
                 ((filterConfig.year.selected.length === filterConfig.year.allValues.length) || filterConfig.year.selected.includes(d.year)) &&
@@ -383,8 +402,7 @@
 
         let tGrossBudget = 0, tSpend = 0, totalMgmtFee = 0, totalEstProfit = 0;
         currentFilteredData.forEach(d => { 
-            tGrossBudget += d.grossBudget; tSpend += d.spend;
-            totalMgmtFee += (d.grossBudget * 0.15);
+            tGrossBudget += d.grossBudget; tSpend += d.spend; totalMgmtFee += (d.grossBudget * 0.15);
             if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { totalEstProfit += (d.budget - d.spend); }
         });
         
@@ -433,6 +451,7 @@
         });
     }
 
+    // จุดแก้ไขที่ 3: คำนวณเตรียมดาต้า Profit/Camp รายลูกค้า (ดักจับส่วนเป็น 0 อย่างสมบูรณ์)
     function prepareClientTableData(data, fmt) {
         const stats = {};
         data.forEach(d => {
@@ -444,16 +463,29 @@
             let markup = (d.profitType === 'Profitable' && d.datePacing >= 0.99) ? (d.budget - d.spend) : 0;
             stats[key].totalP += (mFee + markup);
         });
-        clientTableDataList = Object.keys(stats).map(key => stats[key]);
+        clientTableDataList = Object.keys(stats).map(key => {
+            let item = stats[key];
+            item.profitPerCamp = item.camps > 0 ? (item.totalP / item.camps) : 0;
+            return item;
+        });
         applySort(); updateSortIcons(); currentClientPage = 1; renderClientTablePage(fmt);
     }
 
+    // จุดแก้ไขที่ 4: พ่นบรรทัดตาราง Breakdown ก้อนล่างออกหน้าจอให้เป็น 7 คอลัมน์สมบูรณ์แบบ
     function renderClientTablePage(fmt) {
         const tbody = document.querySelector('#clientTable tbody'); let html = '';
         const start = (currentClientPage - 1) * clientRowsPerPage; const paginatedItems = clientTableDataList.slice(start, start + clientRowsPerPage);
         paginatedItems.forEach(item => { 
             let safeClient = item.client.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            html += `<tr class="clickable-row" onclick="applyCrossFilter('client', '${safeClient}')"><td>${item.bd}</td><td>${item.client}</td><td>${item.adAccount}</td><td>${item.camps}</td><td>฿${fmt(item.budget)}</td><td>฿${fmt(item.totalP)}</td></tr>`; 
+            html += `<tr class="clickable-row" onclick="applyCrossFilter('client', '${safeClient}')">
+                <td>${item.bd}</td>
+                <td>${item.client}</td>
+                <td>${item.adAccount}</td>
+                <td>${item.camps}</td>
+                <td>฿${fmt(item.budget)}</td>
+                <td>฿${fmt(item.totalP)}</td>
+                <td>฿${fmt(item.profitPerCamp)}</td>
+            </tr>`; 
         });
         tbody.innerHTML = html;
         const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1;
@@ -466,29 +498,35 @@
     function togglePlatform() { platformMode = platformMode === 'count' ? 'budget' : 'count'; document.getElementById('btnTogglePlatform').innerText = platformMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformUsage(currentFilteredData); }
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
-    
-    // จุดแก้ไขวิกฤต: แก้ไขชื่อฟังก์ชันจากเดิมที่เป็นพิมพ์ลั่น (toggleBgProfit -> toggleBdProfit) ให้ตรงตาม HTML บัญญัติ
-    function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
-    
+    function toggleBgProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
     function toggleProfitType() { profitTypeMode = profitTypeMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleProfitType').innerText = profitTypeMode === 'count' ? 'View: Count' : 'View: Budget'; drawProfitTypeChart(currentFilteredData); }
     function destroy(name) { if(charts[name]) charts[name].destroy(); }
     const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
 
     function drawPicChart(data) { destroy('pic'); const counts = {}; data.forEach(d => { if(d.pic !== 'Unknown') counts[d.pic] = (counts[d.pic] || 0) + 1; }); let origLabels = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['pic'] = new Chart(document.getElementById('picChart'), { type: 'bar', data: { labels: origLabels.map(l => wrapLabel(l)), datasets: [{ data: origLabels.map(k => counts[k]), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('pic', origLabels[el[0].index]); } } }); }
     
+    // จุดแก้ไขที่ 5: ปรับยกเครื่องฟังก์ชันตารางทีม BD บวกรวบสะสมค่า Gross Budget และหาค่าเฉลี่ย Profit/Camp
     function drawBdTable(data, fmt) {
         const tbody = document.querySelector('#bdTable tbody'); let html = ''; const stats = {};
         data.forEach(d => { 
             if(d.bd === 'Unknown') return; 
-            if(!stats[d.bd]) stats[d.bd] = { camps: 0, totalP: 0 }; 
+            if(!stats[d.bd]) stats[d.bd] = { camps: 0, grossBudget: 0, totalP: 0 }; 
             stats[d.bd].camps++; 
+            stats[d.bd].grossBudget += d.grossBudget;
             let mFee = d.grossBudget * 0.15;
             let markup = (d.profitType === 'Profitable' && d.datePacing >= 0.99) ? (d.budget - d.spend) : 0;
             stats[d.bd].totalP += (mFee + markup);
         });
         Object.keys(stats).sort((a,b) => stats[b].totalP - stats[a].totalP).slice(0, 10).forEach(bd => { 
             let safeBd = bd.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-            html += `<tr class="clickable-row" onclick="applyCrossFilter('bd', '${safeBd}')"><td>${bd}</td><td>${stats[bd].camps}</td><td>฿${fmt(stats[bd].totalP)}</td></tr>`; 
+            let pPerCamp = stats[bd].camps > 0 ? (stats[bd].totalP / stats[bd].camps) : 0;
+            html += `<tr class="clickable-row" onclick="applyCrossFilter('bd', '${safeBd}')">
+                <td>${bd}</td>
+                <td>${stats[bd].camps}</td>
+                <td>฿${fmt(stats[bd].grossBudget)}</td>
+                <td>฿${fmt(stats[bd].totalP)}</td>
+                <td>฿${fmt(pPerCamp)}</td>
+            </tr>`; 
         });
         tbody.innerHTML = html; 
     }
@@ -499,10 +537,7 @@
     function drawBdProfitChart(data) { 
         destroy('bdProfit'); const types = ['Profitable', 'Transparent']; const colors = ['#059669', '#64748b']; 
         const bds = [...new Set(data.map(d => d.bd))].filter(b => b!=='Unknown').slice(0, 12); 
-        const datasets = types.map((t, i) => ({ 
-            label: t, backgroundColor: colors[i], 
-            data: bds.map(bd => { let filtered = data.filter(d => d.bd === bd && d.profitType === t); return bdProfitMode === 'count' ? filtered.length : filtered.reduce((s, c) => s + c.grossBudget, 0); }) 
-        })); 
+        const datasets = types.map((t, i) => ({ label: t, backgroundColor: colors[i], data: bds.map(bd => { let filtered = data.filter(d => d.bd === bd && d.profitType === t); return bdProfitMode === 'count' ? filtered.length : filtered.reduce((s, c) => s + c.grossBudget, 0); }) })); 
         charts['bdProfit'] = new Chart(document.getElementById('bdProfitChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); 
     }
     
@@ -513,20 +548,69 @@
     }
     
     function drawContentChart(data) { destroy('content'); const counts = {}; data.forEach(d => { if(d.content !== 'Unknown') counts[d.content] = (counts[d.content] || 0) + 1; }); let origL = Object.keys(counts); charts['content'] = new Chart(document.getElementById('contentChart'), { type: 'doughnut', data: { labels: origL, datasets: [{ data: Object.values(counts), backgroundColor: ['#8b5cf6', '#ec4899'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('content', origL[el[0].index]); } } }); }
+    function drawPlatformUsage(data) { destroy('platform'); const counts = {}; data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + (platformMode === 'count' ? 1 : d.grossBudget); }); let origL = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { type: 'bar', data: { labels: origL, datasets: [{ data: origL.map(k => counts[k]), backgroundColor: '#0f766e' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('platform', origL[el[0].index]); } } }); }
+    function drawPlatformTrend(data) { destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort(); const datasets = platforms.map((plat, i) => { const dataPoints = months.map(m => { const camps = data.filter(d => d.platform === plat && d.month === m); return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.grossBudget, 0); }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; }); charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('month', months[el[0].index]); } } }); }
+
+    /* AI Chat Engine Logic หลังบ้าน */
+    function toggleAiChat() { let w = document.getElementById('aiChatWindow'); w.classList.toggle('active'); }
+    function saveApiKey(val) { localStorage.setItem('gemini_dashboard_key', val.trim()); alert('🔒 บันทึกรหัสลับ API Key สำเร็จ (จำเฉพาะในเครื่องนี้เท่านั้น)'); }
+    function loadSavedApiKey() { let k = localStorage.getItem('gemini_dashboard_key'); if(k) document.getElementById('ai-api-key').value = k; }
     
-    function drawPlatformUsage(data) { 
-        destroy('platform'); const counts = {}; 
-        data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + (platformMode === 'count' ? 1 : d.grossBudget); }); 
-        let origL = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); 
-        charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { type: 'bar', data: { labels: origL, datasets: [{ data: origL.map(k => counts[k]), backgroundColor: '#0f766e' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('platform', origL[el[0].index]); } } }); 
+    function appendChatMessage(sender, text) {
+        let box = document.getElementById('aiChatMessages');
+        let div = document.createElement('div'); div.className = `msg ${sender}`;
+        div.textContent = text; box.appendChild(div); box.scrollTop = box.scrollHeight;
     }
-    
-    function drawPlatformTrend(data) { 
-        destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort(); 
-        const datasets = platforms.map((plat, i) => { 
-            const dataPoints = months.map(m => { const camps = data.filter(d => d.platform === plat && d.month === m); return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.grossBudget, 0); }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; 
-        }); 
-        charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('month', months[el[0].index]); } } }); 
+
+    async function callGeminiAPI(promptText) {
+        let key = localStorage.getItem('gemini_dashboard_key');
+        if (!key) { alert('🔑 กรุณากรอกรหัส Gemini API Key ที่หัวกล่องแชทก่อนใช้งานครับจารย์!'); return null; }
+        let endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${key}`;
+        try {
+            let response = await fetch(endpoint, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+            });
+            let resData = await response.json();
+            return resData.candidates[0].content.parts[0].text;
+        } catch (err) { return "🚨 ระบบขัดข้อง: ไม่สามารถเชื่อมต่อกับสิทธิ์องค์กรได้ ตรวจสอบอินเทอร์เน็ตหรือความถูกต้องของ Key ครับจารย์"; }
+    }
+
+    async function generateAiSummary() {
+        let camps = document.getElementById('kpi-camp').innerText;
+        let budget = document.getElementById('kpi-budget').innerText;
+        let spend = document.getElementById('kpi-spend').innerText;
+        let totalP = document.getElementById('kpi-total-profit').innerText;
+        let rate = document.getElementById('kpi-rate').innerText;
+        
+        appendChatMessage('user', '🪄 สรุปภาพรวมแดชบอร์ด ณ ตอนนี้ให้ที');
+        let contextPrompt = `คุณคือผู้ช่วย AI ประจำทีม Ad Optimization ทำหน้าที่สรุปตัวเลขหน้าแดชบอร์ดให้ทีมบริหารฟังด้วยภาษาที่เป็นกันเอง กระชับ ดุดัน และคมคาย (ห้ามใช้ markdown หนาบางใดๆ พิมพ์เป็นข้อความดิบสากล)
+        นี่คือตัวเลขฟิลเตอร์ปัจจุบันบนหน้าจอ:
+        - จำนวนแคมเปญทั้งหมด: ${camps} แคมเปญ
+        - ยอดรวม Gross Budget (เรียกเก็บลูกค้า): ${budget} บาท
+        - ยอด Actual Spending (ใช้จริง): ${spend} บาท
+        - เงินกำไรสุทธิรวมบริษัท (Total Profit): ${totalP} บาท
+        - อัตราทำกำไรภาพรวม (Profit Rate): ${rate}
+        
+        ช่วยวิเคราะห์สรุป Insight ภาพรวมนี้ออกมาเป็นภาษาไทยสั้นๆ 3-4 บรรทัดให้หน่อยครับ`;
+        
+        let aiRes = await callGeminiAPI(contextPrompt);
+        if(aiRes) appendChatMessage('ai', aiRes);
+    }
+
+    async function sendAiMessage() {
+        let inp = document.getElementById('aiUserQuery'); let query = inp.value.trim(); if(!query) return;
+        appendChatMessage('user', query); inp.value = '';
+        
+        let camps = document.getElementById('kpi-camp').innerText;
+        let totalP = document.getElementById('kpi-total-profit').innerText;
+        
+        let customPrompt = `คุณคือผู้ช่วย AI ประจำทีม Ad Optimization (ตอบภาษาไทยสั้นกระชับเป็นกันเอง ห้ามใช้ markdown เสมอ)
+        บริบทปัจจุบันของแดชบอร์ด: มีแคมเปญเปิดอยู่ ${camps} แคมเปญ กำไรรวมของทีมคือ ${totalP} บาท
+        คำถามจากทีมงาน: "${query}"`;
+        
+        let aiRes = await callGeminiAPI(customPrompt);
+        if(aiRes) appendChatMessage('ai', aiRes);
     }
 
     fetchRealData();
