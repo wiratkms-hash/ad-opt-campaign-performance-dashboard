@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.7 (AI & Enhanced Tables)</title>
+    <title>Ad Optimization Performance Dashboard V5.7.1 (Bug Fixed)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -86,11 +86,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.7)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.7.1)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.7)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.7.1)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -299,13 +299,13 @@
 
         setupFilters(); 
         setDefaultDates();
-        loadSavedApiKey(); // โหลดรหัสลับ Gemini ที่เซฟไว้ในเครื่อง
+        loadSavedApiKey(); 
         updateDashboard();
         document.getElementById('loading-screen').style.display = 'none';
     }
 
     function setDefaultDates() {
-        let now = new Date(2026, 4, 1); // ล็อกไทม์ไลน์ระบบปี 2026 
+        let now = new Date(2026, 4, 1); 
         let currentYear = now.getFullYear(); let currentMonth = now.getMonth();
         let defStart = new Date(currentYear, currentMonth, 1); let defEnd = new Date(currentYear, currentMonth + 1, 0);
         let overlapCount = rawData.filter(d => d.startDateObj && d.endDateObj && (d.startDateObj <= defEnd && d.endDateObj >= defStart)).length;
@@ -320,6 +320,10 @@
         document.getElementById('filter-end-date').value = formatToInput(defEnd);
     }
 
+    style = document.createElement('style');
+    style.innerHTML = '.item-label-client { display: block; padding: 8px 12px; font-size: 13px; font-weight: 400; cursor: pointer; color: var(--text-main); margin: 0; transition: background 0.2s; white-space: nowrap; } .item-label-client:hover { background: #f8fafc; }';
+    document.head.appendChild(style);
+
     function setupFilters() {
         Object.keys(filterConfig).forEach(fid => {
             let unique = [...new Set(rawData.map(item => item[fid]))].filter(val => val !== 'Unknown').sort();
@@ -329,7 +333,14 @@
                 listHtml += `<div style="padding: 8px; position: sticky; top: 0; background: white; z-index: 11; border-bottom: 1px solid var(--border-color);"><input type="text" id="search-client" placeholder="🔍 ค้นหาชื่อลูกค้า..." oninput="filterClientList(this)" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box;"></div>`;
             }
             listHtml += `<label><input type="checkbox" value="All" id="all-${fid}" onchange="handleAllCheck('${fid}', this)" checked> <b>Select All</b></label>`;
-            unique.forEach(val => { let safeVal = val.replace(/"/g, "&quot;"); listHtml += `<label class="item-label-${fid}"><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label>`; });
+            unique.forEach(val => { 
+                let safeVal = val.replace(/"/g, "&quot;"); 
+                if (fid === 'client') {
+                    listHtml += `<label class="item-label-client"><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label>`;
+                } else {
+                    listHtml += `<label><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label>`;
+                }
+            });
             document.getElementById('list-' + fid).innerHTML = listHtml;
         });
         document.addEventListener('click', e => { if (!e.target.closest('.ms-container')) document.querySelectorAll('.ms-list').forEach(l => l.classList.remove('active')); });
@@ -375,7 +386,7 @@
     function applyCrossFilter(fid, value) {
         let isIsolated = (filterConfig[fid].selected.length === 1 && filterConfig[fid].selected[0] === value);
         let checkboxes = document.querySelectorAll(`.chk-${fid}`); let allCb = document.getElementById(`all-${fid}`);
-        if (isIsolated) { checkboxes.forEach(c => true); if(allCb) allCb.checked = true; filterConfig[fid].selected = [...filterConfig[fid].allValues]; } 
+        if (isIsolated) { checkboxes.forEach(c => c.checked = true); if(allCb) allCb.checked = true; filterConfig[fid].selected = [...filterConfig[fid].allValues]; } 
         else { checkboxes.forEach(c => { c.checked = (c.value === value); }); if(allCb) allCb.checked = false; filterConfig[fid].selected = [value]; }
         updateFilterHeader(fid); updateDashboard();
     }
@@ -451,7 +462,6 @@
         });
     }
 
-    // จุดแก้ไขที่ 3: คำนวณเตรียมดาต้า Profit/Camp รายลูกค้า (ดักจับส่วนเป็น 0 อย่างสมบูรณ์)
     function prepareClientTableData(data, fmt) {
         const stats = {};
         data.forEach(d => {
@@ -471,7 +481,6 @@
         applySort(); updateSortIcons(); currentClientPage = 1; renderClientTablePage(fmt);
     }
 
-    // จุดแก้ไขที่ 4: พ่นบรรทัดตาราง Breakdown ก้อนล่างออกหน้าจอให้เป็น 7 คอลัมน์สมบูรณ์แบบ
     function renderClientTablePage(fmt) {
         const tbody = document.querySelector('#clientTable tbody'); let html = '';
         const start = (currentClientPage - 1) * clientRowsPerPage; const paginatedItems = clientTableDataList.slice(start, start + clientRowsPerPage);
@@ -498,14 +507,16 @@
     function togglePlatform() { platformMode = platformMode === 'count' ? 'budget' : 'count'; document.getElementById('btnTogglePlatform').innerText = platformMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformUsage(currentFilteredData); }
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
-    function toggleBgProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
+    
+    /* จุดแก้ไขบั๊ก V5.7.1: ปรับชื่อจาก toggleBgProfit เป็น toggleBdProfit ตรงสคริปต์หลังบ้านให้ตรงกับปุ่ม HTML */
+    function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
+    
     function toggleProfitType() { profitTypeMode = profitTypeMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleProfitType').innerText = profitTypeMode === 'count' ? 'View: Count' : 'View: Budget'; drawProfitTypeChart(currentFilteredData); }
     function destroy(name) { if(charts[name]) charts[name].destroy(); }
     const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
 
     function drawPicChart(data) { destroy('pic'); const counts = {}; data.forEach(d => { if(d.pic !== 'Unknown') counts[d.pic] = (counts[d.pic] || 0) + 1; }); let origLabels = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['pic'] = new Chart(document.getElementById('picChart'), { type: 'bar', data: { labels: origLabels.map(l => wrapLabel(l)), datasets: [{ data: origLabels.map(k => counts[k]), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('pic', origLabels[el[0].index]); } } }); }
     
-    // จุดแก้ไขที่ 5: ปรับยกเครื่องฟังก์ชันตารางทีม BD บวกรวบสะสมค่า Gross Budget และหาค่าเฉลี่ย Profit/Camp
     function drawBdTable(data, fmt) {
         const tbody = document.querySelector('#bdTable tbody'); let html = ''; const stats = {};
         data.forEach(d => { 
