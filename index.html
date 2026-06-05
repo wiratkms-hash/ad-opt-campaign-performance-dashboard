@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.7.1 (Bug Fixed)</title>
+    <title>Ad Optimization Performance Dashboard V5.8 (Consolidated Client Layout)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -86,11 +86,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.7.1)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.8)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.7.1)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.8)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -184,6 +184,32 @@
         </div>
     </div>
 
+    <div class="chart-row row-1-col">
+        <div class="chart-card" style="min-height: 480px;">
+            <div class="chart-header"><h3 class="chart-title">🏢 Consolidated Client Summary (Click Row to Filter Client)</h3></div>
+            <div class="table-container">
+                <table id="summaryTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%">BD Team</th>
+                            <th style="width: 25%">Client Name</th>
+                            <th class="sortable" onclick="handleSumSort('camps')" style="width: 10%; cursor: pointer;">Camps <span id="sort-sum-camps"></span></th>
+                            <th class="sortable" onclick="handleSumSort('budget')" style="width: 16%; cursor: pointer;">Gross Budget <span id="sort-sum-budget">🔽</span></th>
+                            <th class="sortable" onclick="handleSumSort('totalP')" style="width: 15%; cursor: pointer;">Total Profit <span id="sort-sum-totalP"></span></th>
+                            <th style="width: 14%">Profit/Camp</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="pagination-container">
+                <button class="btn-toggle" id="btnPrevSumPage" onclick="changeSummaryPage(-1)">Previous</button>
+                <span id="summaryPageInfo" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Page 1 of 1</span>
+                <button class="btn-toggle" id="btnNextSumPage" onclick="changeSummaryPage(1)">Next</button>
+            </div>
+        </div>
+    </div>
+
     <button class="ai-chat-toggle" onclick="toggleAiChat()">💬</button>
     <div class="ai-chat-window" id="aiChatWindow">
         <div class="ai-chat-header">
@@ -227,10 +253,14 @@
 
     let rawData = []; let currentFilteredData = []; let charts = {};
     let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count'; let profitTypeMode = 'count'; let platformMode = 'count';
-    let clientTableDataList = []; let currentClientPage = 1; const clientRowsPerPage = 10;
     
-    let sortCol = 'budget'; 
-    let sortDesc = true; 
+    // ดาต้าเบสของตาราง Breakdown เดิม
+    let clientTableDataList = []; let currentClientPage = 1; const clientRowsPerPage = 10;
+    let sortCol = 'budget'; let sortDesc = true; 
+
+    // จุดแก้ไขที่ 2: เพิ่มตัวแปรควบคุมลำดับและการแบ่งหน้าของตารางสรุปรายลูกค้า Consolidated Client
+    let clientSummaryDataList = []; let currentSummaryPage = 1; const summaryRowsPerPage = 10;
+    let sortSumCol = 'budget'; let sortSumDesc = true;
 
     let filterConfig = {
         team: { label: 'Teams', selected: [], allValues: [] },
@@ -438,7 +468,9 @@
         drawContentChart(currentFilteredData); 
         drawPlatformUsage(currentFilteredData); 
         drawPlatformTrend(currentFilteredData);
+        
         prepareClientTableData(currentFilteredData, fmt);
+        prepareSummaryTableData(currentFilteredData, fmt); // เรียกคำนวณถังข้อมูลรายชื่อลูกค้าก้อนใหม่
     }
 
     function handleSort(col) {
@@ -504,13 +536,82 @@
     
     function changeClientPage(step) { const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); }
 
+    // จุดแก้ไขที่ 3: เพิ่มฟังก์ชันคำนวณและควบคุมระบบหลังบ้านของตาราง Consolidated Client สรุปรายชื่อลูกค้าทั้งหมด
+    function handleSummarySort(col) {
+        if (sortSumCol === col) { sortSumDesc = !sortSumDesc; } else { sortSumCol = col; sortSumDesc = true; }
+        applySummarySort(); updateSummarySortIcons(); currentSummaryPage = 1;
+        renderSummaryTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n));
+    }
+
+    function updateSummarySortIcons() {
+        document.getElementById('sort-sum-camps').innerText = sortSumCol === 'camps' ? (sortSumDesc ? '🔽' : '🔼') : '';
+        document.getElementById('sort-sum-budget').innerText = sortSumCol === 'budget' ? (sortSumDesc ? '🔽' : '🔼') : '';
+        document.getElementById('sort-sum-totalP').innerText = sortSumCol === 'totalP' ? (sortSumDesc ? '🔽' : '🔼') : '';
+    }
+
+    function applySummarySort() {
+        clientSummaryDataList.sort((a, b) => {
+            let valA = a[sortSumCol]; let valB = b[sortSumCol];
+            if (valA < valB) return sortSumDesc ? 1 : -1;
+            if (valA > valB) return sortSumDesc ? -1 : 1;
+            return 0;
+        });
+    }
+
+    function prepareSummaryTableData(data, fmt) {
+        const stats = {};
+        data.forEach(d => {
+            if (d.bd === 'Unknown' || d.client === 'Unknown') return;
+            // ล็อก Group Key เฉพาะช่องทีม BD และชื่อลูกค้าเท่านั้น (ตัด Ad Account ออกไป)
+            const key = `${d.bd} || ${d.client}`;
+            if (!stats[key]) stats[key] = { bd: d.bd, client: d.client, camps: 0, budget: 0, totalP: 0 };
+            
+            stats[key].camps++; 
+            stats[key].budget += d.grossBudget;
+            
+            let mFee = d.grossBudget * 0.15;
+            let markup = (d.profitType === 'Profitable' && d.datePacing >= 0.99) ? (d.budget - d.spend) : 0;
+            stats[key].totalP += (mFee + markup);
+        });
+        
+        clientSummaryDataList = Object.keys(stats).map(key => {
+            let item = stats[key];
+            item.profitPerCamp = item.camps > 0 ? (item.totalP / item.camps) : 0; // ดักจับตัวหารเป็น 0 อย่างสมบูรณ์
+            return item;
+        });
+        
+        applySummarySort(); 
+        updateSummarySortIcons(); 
+        currentSummaryPage = 1; 
+        renderSummaryTablePage(fmt);
+    }
+
+    function renderSummaryTablePage(fmt) {
+        const tbody = document.querySelector('#summaryTable tbody'); let html = '';
+        const start = (currentSummaryPage - 1) * summaryRowsPerPage; const paginatedItems = clientSummaryDataList.slice(start, start + summaryRowsPerPage);
+        paginatedItems.forEach(item => { 
+            let safeClient = item.client.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            html += `<tr class="clickable-row" onclick="applyCrossFilter('client', '${safeClient}')">
+                <td>${item.bd}</td>
+                <td>${item.client}</td>
+                <td>${item.camps}</td>
+                <td>฿${fmt(item.budget)}</td>
+                <td>฿${fmt(item.totalP)}</td>
+                <td>฿${fmt(item.profitPerCamp)}</td>
+            </tr>`; 
+        });
+        tbody.innerHTML = html;
+        const totalPages = Math.ceil(clientSummaryDataList.length / summaryRowsPerPage) || 1;
+        document.getElementById('summaryPageInfo').innerText = `Page ${currentSummaryPage} of ${totalPages}`;
+        document.getElementById('btnPrevSumPage').disabled = currentSummaryPage === 1; document.getElementById('btnNextSumPage').disabled = currentSummaryPage === totalPages;
+    }
+    
+    function changeSummaryPage(step) { const totalPages = Math.ceil(clientSummaryDataList.length / summaryRowsPerPage) || 1; currentSummaryPage = Math.max(1, Math.min(currentSummaryPage + step, totalPages)); renderSummaryTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); }
+
     function togglePlatform() { platformMode = platformMode === 'count' ? 'budget' : 'count'; document.getElementById('btnTogglePlatform').innerText = platformMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformUsage(currentFilteredData); }
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
-    
-    /* จุดแก้ไขบั๊ก V5.7.1: ปรับชื่อจาก toggleBgProfit เป็น toggleBdProfit ตรงสคริปต์หลังบ้านให้ตรงกับปุ่ม HTML */
     function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
-    
     function toggleProfitType() { profitTypeMode = profitTypeMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleProfitType').innerText = profitTypeMode === 'count' ? 'View: Count' : 'View: Budget'; drawProfitTypeChart(currentFilteredData); }
     function destroy(name) { if(charts[name]) charts[name].destroy(); }
     const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
@@ -612,7 +713,6 @@
     async function sendAiMessage() {
         let inp = document.getElementById('aiUserQuery'); let query = inp.value.trim(); if(!query) return;
         appendChatMessage('user', query); inp.value = '';
-        
         let camps = document.getElementById('kpi-camp').innerText;
         let totalP = document.getElementById('kpi-total-profit').innerText;
         
