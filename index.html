@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.8 (Consolidated Client Layout)</title>
+    <title>Ad Optimization Performance Dashboard V5.9 (Total Clients KPI)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -28,11 +28,12 @@
         .ms-list label:hover { background: #f8fafc; }
         .ms-list input[type="checkbox"] { margin-right: 8px; cursor: pointer; }
         
+        /* ปรับโครงสร้างชุดสีและสัดส่วนกล่อง KPI เป็นระบบ 2 แถว แถวละ 4 กล่องอย่างพอดี */
         .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 24px; }
         .kpi-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); transition: transform 0.2s;}
         .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .kpi-card:nth-child(4), .kpi-card:nth-child(5) { border-top-color: var(--purple); }
-        .kpi-card:nth-child(6), .kpi-card:nth-child(7) { border-top-color: var(--success); }
+        .kpi-card:nth-child(6), .kpi-card:nth-child(7), .kpi-card:nth-child(8) { border-top-color: var(--success); }
         .kpi-title { font-size: 13px; color: var(--text-muted); font-weight: 600; line-height: 1.4; }
         .kpi-value { font-size: 20px; font-weight: 700; margin-top: 8px; }
         
@@ -86,11 +87,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.8)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.9)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.8)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.9)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -110,6 +111,7 @@
 
     <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-title">Total Campaigns</div><div class="kpi-value" id="kpi-camp">0</div></div>
+        <div class="kpi-card"><div class="kpi-title">Total Clients</div><div class="kpi-value" id="kpi-client-count">0</div></div>
         <div class="kpi-card"><div class="kpi-title">Gross Budget (THB)</div><div class="kpi-value" id="kpi-budget">0</div></div>
         <div class="kpi-card"><div class="kpi-title">Actual Spending (THB)</div><div class="kpi-value" id="kpi-spend">0</div></div>
         <div class="kpi-card"><div class="kpi-title">Est. Mgmt Fee (THB)</div><div class="kpi-value" id="kpi-mgmt">0</div></div>
@@ -143,7 +145,7 @@
     </div>
 
     <div class="chart-row row-2-cols">
-        <div class="chart-card"><div class="chart-header"><h3 class="chart-title">BD Team vs Campaign Funnel</h3></div><div class="chart-body"><canvas id="bdFunnelChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-body"><canvas id="bdFunnelChart"></canvas></div></div>
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">BD Team vs Profit Type</h3><button class="btn-toggle" id="btnToggleBdProfit" onclick="toggleBdProfit()">View: Count</button></div><div class="chart-body"><canvas id="bdProfitChart"></canvas></div></div>
     </div>
 
@@ -168,7 +170,7 @@
                             <th style="width: 15%">Client Name</th>
                             <th style="width: 20%">Ad Account Name</th>
                             <th class="sortable" onclick="handleSort('camps')" style="width: 8%; cursor: pointer;">Camps <span id="sort-camps"></span></th>
-                            <th class="sortable" onclick="handleSort('budget')" style="width: 15%; cursor: pointer;">Gross Budget <span id="sort-budget">🔽</span></th>
+                            <th class="sortable" onclick="handleSort('budget')" style="width: 15%; pointer: cursor;">Gross Budget <span id="sort-budget">🔽</span></th>
                             <th class="sortable" onclick="handleSort('totalP')" style="width: 14%; cursor: pointer;">Total Profit <span id="sort-totalP"></span></th>
                             <th style="width: 14%">Profit/Camp</th>
                         </tr>
@@ -254,11 +256,9 @@
     let rawData = []; let currentFilteredData = []; let charts = {};
     let trendMode = 'count'; let funnelMode = 'count'; let bdProfitMode = 'count'; let profitTypeMode = 'count'; let platformMode = 'count';
     
-    // ดาต้าเบสของตาราง Breakdown เดิม
     let clientTableDataList = []; let currentClientPage = 1; const clientRowsPerPage = 10;
     let sortCol = 'budget'; let sortDesc = true; 
 
-    // จุดแก้ไขที่ 2: เพิ่มตัวแปรควบคุมลำดับและการแบ่งหน้าของตารางสรุปรายลูกค้า Consolidated Client
     let clientSummaryDataList = []; let currentSummaryPage = 1; const summaryRowsPerPage = 10;
     let sortSumCol = 'budget'; let sortSumDesc = true;
 
@@ -442,16 +442,21 @@
         });
 
         let tGrossBudget = 0, tSpend = 0, totalMgmtFee = 0, totalEstProfit = 0;
+        let uniqueClients = new Set(); // ถังเก็บรายชื่อลูกค้าแบบไม่ซ้ำกัน
+
         currentFilteredData.forEach(d => { 
             tGrossBudget += d.grossBudget; tSpend += d.spend; totalMgmtFee += (d.grossBudget * 0.15);
             if (d.profitType === 'Profitable' && d.datePacing >= 0.99) { totalEstProfit += (d.budget - d.spend); }
+            if (d.client && d.client !== 'Unknown') { uniqueClients.add(d.client); }
         });
         
         let totalProfit = totalMgmtFee + totalEstProfit; 
         let profitRate = tGrossBudget > 0 ? (totalProfit / tGrossBudget) * 100 : 0;
         const fmt = (n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n);
         
+        // จุดแก้ไขที่ 2: พ่นตัวเลขสถิติจำนวนลูกค้าไม่ซ้ำส่งออกกล่อง KPI ตัวใหม่บนหน้าจอ
         document.getElementById('kpi-camp').innerText = currentFilteredData.length; 
+        document.getElementById('kpi-client-count').innerText = uniqueClients.size; 
         document.getElementById('kpi-budget').innerText = "฿" + fmt(tGrossBudget); 
         document.getElementById('kpi-spend').innerText = "฿" + fmt(tSpend); 
         document.getElementById('kpi-mgmt').innerText = "฿" + fmt(totalMgmtFee); 
@@ -470,7 +475,7 @@
         drawPlatformTrend(currentFilteredData);
         
         prepareClientTableData(currentFilteredData, fmt);
-        prepareSummaryTableData(currentFilteredData, fmt); // เรียกคำนวณถังข้อมูลรายชื่อลูกค้าก้อนใหม่
+        prepareSummaryTableData(currentFilteredData, fmt);
     }
 
     function handleSort(col) {
@@ -536,8 +541,7 @@
     
     function changeClientPage(step) { const totalPages = Math.ceil(clientTableDataList.length / clientRowsPerPage) || 1; currentClientPage = Math.max(1, Math.min(currentClientPage + step, totalPages)); renderClientTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n)); }
 
-    // จุดแก้ไขที่ 3: เพิ่มฟังก์ชันคำนวณและควบคุมระบบหลังบ้านของตาราง Consolidated Client สรุปรายชื่อลูกค้าทั้งหมด
-    function handleSummarySort(col) {
+    function handleSumSort(col) {
         if (sortSumCol === col) { sortSumDesc = !sortSumDesc; } else { sortSumCol = col; sortSumDesc = true; }
         applySummarySort(); updateSummarySortIcons(); currentSummaryPage = 1;
         renderSummaryTablePage((n) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n));
@@ -562,28 +566,17 @@
         const stats = {};
         data.forEach(d => {
             if (d.bd === 'Unknown' || d.client === 'Unknown') return;
-            // ล็อก Group Key เฉพาะช่องทีม BD และชื่อลูกค้าเท่านั้น (ตัด Ad Account ออกไป)
             const key = `${d.bd} || ${d.client}`;
             if (!stats[key]) stats[key] = { bd: d.bd, client: d.client, camps: 0, budget: 0, totalP: 0 };
-            
-            stats[key].camps++; 
-            stats[key].budget += d.grossBudget;
-            
+            stats[key].camps++; stats[key].budget += d.grossBudget;
             let mFee = d.grossBudget * 0.15;
             let markup = (d.profitType === 'Profitable' && d.datePacing >= 0.99) ? (d.budget - d.spend) : 0;
             stats[key].totalP += (mFee + markup);
         });
-        
         clientSummaryDataList = Object.keys(stats).map(key => {
-            let item = stats[key];
-            item.profitPerCamp = item.camps > 0 ? (item.totalP / item.camps) : 0; // ดักจับตัวหารเป็น 0 อย่างสมบูรณ์
-            return item;
+            let item = stats[key]; item.profitPerCamp = item.camps > 0 ? (item.totalP / item.camps) : 0; return item;
         });
-        
-        applySummarySort(); 
-        updateSummarySortIcons(); 
-        currentSummaryPage = 1; 
-        renderSummaryTablePage(fmt);
+        applySummarySort(); updateSummarySortIcons(); currentSummaryPage = 1; renderSummaryTablePage(fmt);
     }
 
     function renderSummaryTablePage(fmt) {
@@ -623,8 +616,7 @@
         data.forEach(d => { 
             if(d.bd === 'Unknown') return; 
             if(!stats[d.bd]) stats[d.bd] = { camps: 0, grossBudget: 0, totalP: 0 }; 
-            stats[d.bd].camps++; 
-            stats[d.bd].grossBudget += d.grossBudget;
+            stats[d.bd].camps++; stats[d.bd].grossBudget += d.grossBudget;
             let mFee = d.grossBudget * 0.15;
             let markup = (d.profitType === 'Profitable' && d.datePacing >= 0.99) ? (d.budget - d.spend) : 0;
             stats[d.bd].totalP += (mFee + markup);
@@ -683,13 +675,14 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
             });
-            let resData = await response.json();
-            return resData.candidates[0].content.parts[0].text;
+            let resData = await response.json(); return resData.candidates[0].content.parts[0].text;
         } catch (err) { return "🚨 ระบบขัดข้อง: ไม่สามารถเชื่อมต่อกับสิทธิ์องค์กรได้ ตรวจสอบอินเทอร์เน็ตหรือความถูกต้องของ Key ครับจารย์"; }
     }
 
+    // จุดแก้ไขที่ 4: ขยายระบบวิเคราะห์ของปุ่มกดลัด AI สรุปแผงตัวเลขภาพรวมให้กวาดข้อมูล Total Clients เข้าท่อ Gemini ไปด้วย
     async function generateAiSummary() {
         let camps = document.getElementById('kpi-camp').innerText;
+        let clients = document.getElementById('kpi-client-count').innerText;
         let budget = document.getElementById('kpi-budget').innerText;
         let spend = document.getElementById('kpi-spend').innerText;
         let totalP = document.getElementById('kpi-total-profit').innerText;
@@ -699,6 +692,7 @@
         let contextPrompt = `คุณคือผู้ช่วย AI ประจำทีม Ad Optimization ทำหน้าที่สรุปตัวเลขหน้าแดชบอร์ดให้ทีมบริหารฟังด้วยภาษาที่เป็นกันเอง กระชับ ดุดัน และคมคาย (ห้ามใช้ markdown หนาบางใดๆ พิมพ์เป็นข้อความดิบสากล)
         นี่คือตัวเลขฟิลเตอร์ปัจจุบันบนหน้าจอ:
         - จำนวนแคมเปญทั้งหมด: ${camps} แคมเปญ
+        - จำนวนลูกค้าที่วิ่งงานอยู่ทั้งหมด: ${clients} รายชื่อลูกค้า
         - ยอดรวม Gross Budget (เรียกเก็บลูกค้า): ${budget} บาท
         - ยอด Actual Spending (ใช้จริง): ${spend} บาท
         - เงินกำไรสุทธิรวมบริษัท (Total Profit): ${totalP} บาท
@@ -706,22 +700,17 @@
         
         ช่วยวิเคราะห์สรุป Insight ภาพรวมนี้ออกมาเป็นภาษาไทยสั้นๆ 3-4 บรรทัดให้หน่อยครับ`;
         
-        let aiRes = await callGeminiAPI(contextPrompt);
-        if(aiRes) appendChatMessage('ai', aiRes);
+        let aiRes = await callGeminiAPI(contextPrompt); if(aiRes) appendChatMessage('ai', aiRes);
     }
 
     async function sendAiMessage() {
         let inp = document.getElementById('aiUserQuery'); let query = inp.value.trim(); if(!query) return;
         appendChatMessage('user', query); inp.value = '';
-        let camps = document.getElementById('kpi-camp').innerText;
-        let totalP = document.getElementById('kpi-total-profit').innerText;
-        
+        let camps = document.getElementById('kpi-camp').innerText; let totalP = document.getElementById('kpi-total-profit').innerText;
         let customPrompt = `คุณคือผู้ช่วย AI ประจำทีม Ad Optimization (ตอบภาษาไทยสั้นกระชับเป็นกันเอง ห้ามใช้ markdown เสมอ)
         บริบทปัจจุบันของแดชบอร์ด: มีแคมเปญเปิดอยู่ ${camps} แคมเปญ กำไรรวมของทีมคือ ${totalP} บาท
         คำถามจากทีมงาน: "${query}"`;
-        
-        let aiRes = await callGeminiAPI(customPrompt);
-        if(aiRes) appendChatMessage('ai', aiRes);
+        let aiRes = await callGeminiAPI(customPrompt); if(aiRes) appendChatMessage('ai', aiRes);
     }
 
     fetchRealData();
