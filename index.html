@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.10 (Strict Accounting Edition)</title>
-    <!-- Chart.js -->
+    <title>Ad Optimization Performance Dashboard V5.11 (Fully Optimized Data Pipeline)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Chart.js DataLabels Plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -89,11 +86,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.10)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.11)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.10)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.11)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -161,12 +158,10 @@
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Trend by Month</h3><button class="btn-toggle" id="btnToggleTrend" onclick="toggleTrend()">View: Count</button></div><div class="chart-body"><canvas id="platformTrendChart"></canvas></div></div>
     </div>
 
-    <!-- ตารางก้อนเดิม: Breakdown รายบัญชีแอดแชนเนล -->
     <div class="chart-row row-1-col">
         <div class="chart-card" style="min-height: 480px;">
             <div class="chart-header"><h3 class="chart-title">💼 BD Team, Client & Ad Account Breakdown (Click Row to Filter Client)</h3></div>
             <div class="table-container">
-                <!-- จุดแก้ไขที่ 1: แทรกหัวข้อคอลัมน์ Est. Markup Profit สลับร้อยละขนาดพื้นที่ใหม่เป็นระบบ 8 คอลัมน์ -->
                 <table id="clientTable">
                     <thead>
                         <tr>
@@ -191,12 +186,10 @@
         </div>
     </div>
 
-    <!-- ตารางก้อน Consolidated Client Summary สรุปรายชื่อลูกค้ารายเจ้า (ไม่แตกย่อยบัญชีแอด) -->
     <div class="chart-row row-1-col">
         <div class="chart-card" style="min-height: 480px;">
             <div class="chart-header"><h3 class="chart-title">🏢 Consolidated Client Summary (Click Row to Filter Client)</h3></div>
             <div class="table-container">
-                <!-- จุดแก้ไขที่ 2: แทรกหัวข้อคอลัมน์ Est. Markup Profit และเคลียร์โครงสร้างขนาดเป๊ะๆ เป็นระบบ 7 คอลัมน์ -->
                 <table id="summaryTable">
                     <thead>
                         <tr>
@@ -220,7 +213,6 @@
         </div>
     </div>
 
-    <!-- AI Floating Chat Component หน้าบ้าน -->
     <button class="ai-chat-toggle" onclick="toggleAiChat()">💬</button>
     <div class="ai-chat-window" id="aiChatWindow">
         <div class="ai-chat-header">
@@ -316,22 +308,30 @@
         parsedTH.forEach(row => {
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
             let netBudget = cleanNumber(row[31]);
+            let optRate = cleanPercent(row[13]); 
+            
             rawData.push({ 
                 team: 'TH', year: cleanText(row[50]), month: cleanText(row[51]), bd: cleanText(row[53]), 
                 client: cleanText(row[60]), adAccount: cleanText(row[52]), funnel: cleanText(row[59]), 
                 platform: standardizePlatform(row[7]), content: cleanContentType(row[0]), pic: cleanText(row[1]), 
-                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[12]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[13]), datePacing: cleanPercent(row[21]),
+                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), 
+                profitType: optRate === 0 ? 'Transparent' : 'Profitable', 
+                profitRateOpt: optRate, datePacing: cleanPercent(row[21]),
                 startDateObj: parseCustomDate(row[9]), endDateObj: parseCustomDate(row[10])
             });
         });
         parsedHOC.forEach(row => {
             if (!row[5] || row[5].includes('#N/A') || row[5] === '') return;
             let netBudget = cleanNumber(row[12]);
+            let optRate = cleanPercent(row[16]); 
+            
             rawData.push({ 
                 team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bd: cleanText(row[36]), 
                 client: cleanText(row[40]), adAccount: cleanText(row[35]), funnel: cleanText(row[39]), 
                 platform: standardizePlatform(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[4]), 
-                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), profitType: cleanPercent(row[15]) === 0 ? 'Transparent' : 'Profitable', profitRateOpt: cleanPercent(row[16]), datePacing: cleanPercent(row[23]),
+                budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), 
+                profitType: optRate === 0 ? 'Transparent' : 'Profitable', 
+                profitRateOpt: optRate, datePacing: cleanPercent(row[23]),
                 startDateObj: parseCustomDate(row[10]), endDateObj: parseCustomDate(row[11])
             });
         });
@@ -343,7 +343,6 @@
         document.getElementById('loading-screen').style.display = 'none';
     }
 
-    // ปรับปรุงระบบตั้งค่าวันที่เริ่มต้นแบบนับจากวันเปิดตัวแคมเปญจริง (Strict Matching)
     function setDefaultDates() {
         let now = new Date(2026, 4, 1); 
         let currentYear = now.getFullYear(); let currentMonth = now.getMonth();
@@ -376,7 +375,7 @@
             unique.forEach(val => { 
                 let safeVal = val.replace(/"/g, "&quot;"); 
                 if (fid === 'client') {
-                    listHtml += `<label class="item-label-client"><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label>`;
+                    listHtml += `<div class="item-label-client"><label><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label></div>`;
                 } else {
                     listHtml += `<label><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label>`;
                 }
@@ -431,14 +430,12 @@
         updateFilterHeader(fid); updateDashboard();
     }
 
-    // จุดแก้ไขที่ 3: ปรับปรุงระบบประมวลผลข้อมูลหน้าแดชบอร์ดตามสัญญารูปแบบ Strict Start Month + ยอดมาร์กอัปแบบเจาะจง % สัญญาหลัก
     function updateDashboard() {
         let startVal = document.getElementById('filter-start-date').value; let endVal = document.getElementById('filter-end-date').value;
         let pDate = (val) => { if(!val) return null; let p = val.split('-'); return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])); };
         let startDateSelected = pDate(startVal); let endDateSelected = pDate(endVal);
 
         currentFilteredData = rawData.filter(d => {
-            // ดักจับตรรกะแบบ Strict Start Month: วันที่แคมเปญตอกเสาเข็ม/เริ่มต้น ต้องเกิดขึ้นระหว่างช่วงวันที่ปฏิทินเท่านั้น
             let dateMatch = true;
             if (startDateSelected && endDateSelected && d.startDateObj) { dateMatch = (d.startDateObj >= startDateSelected && d.startDateObj <= endDateSelected); }
             return dateMatch &&
@@ -458,7 +455,6 @@
 
         currentFilteredData.forEach(d => { 
             tGrossBudget += d.grossBudget; tSpend += d.spend; totalMgmtFee += (d.grossBudget * 0.15);
-            // ตรรกะใหม่: สูตร Markup คิดจากเปอร์เซ็นต์ For Optimize สัญญาหลักทันที (ไม่ต้องแคร์ยอด Spend และ pacing 99%)
             if (d.profitType === 'Profitable') { totalEstProfit += (d.grossBudget * d.profitRateOpt); }
             if (d.client && d.client !== 'Unknown') { uniqueClients.add(d.client); }
         });
@@ -511,32 +507,24 @@
         });
     }
 
-    // จุดแก้ไขที่ 4: เพิ่มท่อคำนวณสะสมค่ามาร์กอัปแบบเจาะจงเป้าสัญญาส่งเข้าสู่ดาต้าลิสต์ตาราง Breakdown บัญชีแอด
     function prepareClientTableData(data, fmt) {
         const stats = {};
         data.forEach(d => {
             if (d.bd === 'Unknown' || d.client === 'Unknown') return;
             const key = `${d.bd} || ${d.client} || ${d.adAccount}`;
             if (!stats[key]) stats[key] = { bd: d.bd, client: d.client, adAccount: d.adAccount, camps: 0, budget: 0, markup: 0, totalP: 0 };
-            
-            stats[key].camps++; 
-            stats[key].budget += d.grossBudget;
-            
+            stats[key].camps++; stats[key].budget += d.grossBudget;
             let currentMarkup = d.profitType === 'Profitable' ? (d.grossBudget * d.profitRateOpt) : 0;
             stats[key].markup += currentMarkup;
-            
             let mFee = d.grossBudget * 0.15;
             stats[key].totalP += (mFee + currentMarkup);
         });
         clientTableDataList = Object.keys(stats).map(key => {
-            let item = stats[key];
-            item.profitPerCamp = item.camps > 0 ? (item.totalP / item.camps) : 0; // ดักจับส่วนเป็น 0
-            return item;
+            let item = stats[key]; item.profitPerCamp = item.camps > 0 ? (item.totalP / item.camps) : 0; return item;
         });
         applySort(); updateSortIcons(); currentClientPage = 1; renderClientTablePage(fmt);
     }
 
-    // จุดแก้ไขที่ 5: แสดงผลตาราง Breakdown บัญชีแอดเป็นระบบ 8 คอลัมน์พ่นค่า Est. Markup ออกสู่หน้าจอ
     function renderClientTablePage(fmt) {
         const tbody = document.querySelector('#clientTable tbody'); let html = '';
         const start = (currentClientPage - 1) * clientRowsPerPage; const paginatedItems = clientTableDataList.slice(start, start + clientRowsPerPage);
@@ -582,31 +570,24 @@
         });
     }
 
-    // จุดแก้ไขที่ 6: เพิ่มท่อประมวลผลคำนวณสะสมค่ามาร์กอัปแบบเจาะจงรายชื่อลูกค้าแท้จริง (ตาราง Consolidated สรุปภาพรวมรายเจ้าไม่แยกบัญชีแอด)
     function prepareSummaryTableData(data, fmt) {
         const stats = {};
         data.forEach(d => {
             if (d.bd === 'Unknown' || d.client === 'Unknown') return;
             const key = `${d.bd} || ${d.client}`;
             if (!stats[key]) stats[key] = { bd: d.bd, client: d.client, camps: 0, budget: 0, markup: 0, totalP: 0 };
-            
-            stats[key].camps++; 
-            stats[key].budget += d.grossBudget;
-            
+            stats[key].camps++; stats[key].budget += d.grossBudget;
             let currentMarkup = d.profitType === 'Profitable' ? (d.grossBudget * d.profitRateOpt) : 0;
             stats[key].markup += currentMarkup;
-            
             let mFee = d.grossBudget * 0.15;
             stats[key].totalP += (mFee + currentMarkup);
         });
-        
         clientSummaryDataList = Object.keys(stats).map(key => {
             let item = stats[key]; item.profitPerCamp = item.camps > 0 ? (item.totalP / item.camps) : 0; return item;
         });
         applySummarySort(); updateSummarySortIcons(); currentSummaryPage = 1; renderSummaryTablePage(fmt);
     }
 
-    // จุดแก้ไขที่ 7: พ่นชุดข้อมูลแสดงผลตาราง Consolidated Client Summary เป็นระบบ 7 คอลัมน์อย่างพอดีสวยงาม
     function renderSummaryTablePage(fmt) {
         const tbody = document.querySelector('#summaryTable tbody'); let html = '';
         const start = (currentSummaryPage - 1) * summaryRowsPerPage; const paginatedItems = clientSummaryDataList.slice(start, start + summaryRowsPerPage);
@@ -633,10 +614,7 @@
     function togglePlatform() { platformMode = platformMode === 'count' ? 'budget' : 'count'; document.getElementById('btnTogglePlatform').innerText = platformMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformUsage(currentFilteredData); }
     function toggleTrend() { trendMode = trendMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleTrend').innerText = trendMode === 'count' ? 'View: Count' : 'View: Budget'; drawPlatformTrend(currentFilteredData); }
     function toggleFunnel() { funnelMode = funnelMode === 'count' ? 'spend' : 'count'; document.getElementById('btnToggleFunnel').innerText = funnelMode === 'count' ? 'View: Count' : 'View: Spend'; drawFunnelRadar(currentFilteredData); }
-    
-    // ล็อกระบบตรวจสอบตัวสะกดชื่อฟังก์ชันควบคุมกราฟ BD แบบถูกต้อง (แก้บั๊ก Regression)
     function toggleBdProfit() { bdProfitMode = bdProfitMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleBdProfit').innerText = bdProfitMode === 'count' ? 'View: Count' : 'View: Budget'; drawBdProfitChart(currentFilteredData); }
-    
     function toggleProfitType() { profitTypeMode = profitTypeMode === 'count' ? 'budget' : 'count'; document.getElementById('btnToggleProfitType').innerText = profitTypeMode === 'count' ? 'View: Count' : 'View: Budget'; drawProfitTypeChart(currentFilteredData); }
     function destroy(name) { if(charts[name]) charts[name].destroy(); }
     const defaultLegend = { display: true, position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } };
