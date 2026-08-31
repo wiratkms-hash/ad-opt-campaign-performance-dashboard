@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.13 (Correct Budget Column Reference)</title>
+    <title>Ad Optimization Performance Dashboard V5.14 (CSV Export Enabled)</title>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Chart.js DataLabels Plugin -->
@@ -89,11 +89,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.13)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.14)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.13)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.14)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -126,8 +126,12 @@
     <div class="chart-row row-3-cols">
         <div class="chart-card"><div class="chart-body"><canvas id="picChart"></canvas></div></div>
         
+        <!-- ตารางที่ 1: BD Team Performance Snapshot + เพิ่มปุ่ม Export CSV -->
         <div class="chart-card">
-            <div class="chart-header"><h3 class="chart-title">BD Team Performance Snapshot</h3></div>
+            <div class="chart-header">
+                <h3 class="chart-title">BD Team Performance Snapshot</h3>
+                <button class="btn-toggle" onclick="exportBdTable()">📥 Export CSV</button>
+            </div>
             <div class="table-container">
                 <table id="bdTable">
                     <thead>
@@ -162,10 +166,13 @@
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Trend by Month</h3><button class="btn-toggle" id="btnToggleTrend" onclick="toggleTrend()">View: Count</button></div><div class="chart-body"><canvas id="platformTrendChart"></canvas></div></div>
     </div>
 
-    <!-- ตารางสรุป BD Team vs Client Tier Summary -->
+    <!-- ตารางที่ 2: BD Team vs Client Tier Summary + เพิ่มปุ่ม Export CSV -->
     <div class="chart-row row-1-col">
         <div class="chart-card" style="min-height: 320px;">
-            <div class="chart-header"><h3 class="chart-title">🏷️ BD Team vs Client Tier Summary</h3></div>
+            <div class="chart-header">
+                <h3 class="chart-title">🏷️ BD Team vs Client Tier Summary</h3>
+                <button class="btn-toggle" onclick="exportBdTierTable()">📥 Export CSV</button>
+            </div>
             <div class="table-container">
                 <table id="bdTierTable">
                     <thead>
@@ -185,10 +192,13 @@
         </div>
     </div>
 
-    <!-- ตาราง Breakdown รายบัญชีแอดแชนเนล -->
+    <!-- ตารางที่ 3: BD Team, Client & Ad Account Breakdown + เพิ่มปุ่ม Export CSV -->
     <div class="chart-row row-1-col">
         <div class="chart-card" style="min-height: 480px;">
-            <div class="chart-header"><h3 class="chart-title">💼 BD Team, Client & Ad Account Breakdown (Click Row to Filter Client)</h3></div>
+            <div class="chart-header">
+                <h3 class="chart-title">💼 BD Team, Client & Ad Account Breakdown (Click Row to Filter Client)</h3>
+                <button class="btn-toggle" onclick="exportClientBreakdownTable()">📥 Export CSV</button>
+            </div>
             <div class="table-container">
                 <table id="clientTable">
                     <thead>
@@ -214,10 +224,13 @@
         </div>
     </div>
 
-    <!-- ตาราง Consolidated Client Summary สรุปรายชื่อลูกค้ารายเจ้า (ไม่แตกย่อยบัญชีแอด) -->
+    <!-- ตารางที่ 4: Consolidated Client Summary + เพิ่มปุ่ม Export CSV -->
     <div class="chart-row row-1-col">
         <div class="chart-card" style="min-height: 480px;">
-            <div class="chart-header"><h3 class="chart-title">🏢 Consolidated Client Summary (Click Row to Filter Client)</h3></div>
+            <div class="chart-header">
+                <h3 class="chart-title">🏢 Consolidated Client Summary (Click Row to Filter Client)</h3>
+                <button class="btn-toggle" onclick="exportConsolidatedSummaryTable()">📥 Export CSV</button>
+            </div>
             <div class="table-container">
                 <table id="summaryTable">
                     <thead>
@@ -348,8 +361,6 @@
         
         parsedTH.forEach(row => {
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
-            
-            // ✨ จุดแก้ไขสำคัญ V5.13: เปลี่ยนพิกัดย้ายการดึงข้อมูล Net Budget ฝั่ง TH Data จาก row[31] มาผูกเข้ากับคอลัมน์ L (row[11])
             let netBudget = cleanNumber(row[11]);
             let optRate = cleanPercent(row[13]); 
             
@@ -782,6 +793,127 @@
     function drawContentChart(data) { destroy('content'); const counts = {}; data.forEach(d => { if(d.content !== 'Unknown') counts[d.content] = (counts[d.content] || 0) + 1; }); let origL = Object.keys(counts); charts['content'] = new Chart(document.getElementById('contentChart'), { type: 'doughnut', data: { labels: origL, datasets: [{ data: Object.values(counts), backgroundColor: ['#8b5cf6', '#ec4899'] }] }, options: { plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('content', origL[el[0].index]); } } }); }
     function drawPlatformUsage(data) { destroy('platform'); const counts = {}; data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + (platformMode === 'count' ? 1 : d.grossBudget); }); let origL = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { type: 'bar', data: { labels: origL, datasets: [{ data: origL.map(k => counts[k]), backgroundColor: '#0f766e' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('platform', origL[el[0].index]); } } }); }
     function drawPlatformTrend(data) { destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort(); const datasets = platforms.map((plat, i) => { const dataPoints = months.map(m => { const camps = data.filter(d => d.platform === plat && d.month === m); return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.grossBudget, 0); }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; }); charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('month', months[el[0].index]); } } }); }
+
+    /* ✨ ฟังก์ชันกลางสำหรับการแปลงและดาวน์โหลดไฟล์ CSV (UTF-8 BOM Support) */
+    function exportToCSV(filename, headers, rows) {
+        let csvContent = "\uFEFF"; // ใส่ BOM ป้องกันภาษาไทยใน Excel กลายเป็นภาษาต่างดาว
+        csvContent += headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",") + "\n";
+        rows.forEach(row => {
+            let rowStr = row.map(cell => {
+                let cellVal = cell === null || cell === undefined ? "" : cell.toString();
+                return `"${cellVal.replace(/"/g, '""')}"`;
+            }).join(",");
+            csvContent += rowStr + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    /* 1. Export: BD Team Performance Snapshot */
+    function exportBdTable() {
+        const stats = {};
+        currentFilteredData.forEach(d => { 
+            if(d.bd === 'Unknown') return; 
+            if(!stats[d.bd]) stats[d.bd] = { camps: 0, grossBudget: 0, totalP: 0 }; 
+            stats[d.bd].camps++; stats[d.bd].grossBudget += d.grossBudget;
+            let currentMarkup = d.profitType === 'Profitable' ? (d.grossBudget * d.profitRateOpt) : 0;
+            let mFee = d.grossBudget * 0.15;
+            stats[d.bd].totalP += (mFee + currentMarkup);
+        });
+
+        const headers = ["BD Team", "Camps", "Gross Budget (THB)", "Total Profit (THB)", "Profit/Camp (THB)"];
+        const rows = Object.keys(stats).sort((a,b) => stats[b].totalP - stats[a].totalP).map(bd => {
+            let pPerCamp = stats[bd].camps > 0 ? (stats[bd].totalP / stats[bd].camps) : 0;
+            return [
+                bd,
+                stats[bd].camps,
+                Math.round(stats[bd].grossBudget),
+                Math.round(stats[bd].totalP),
+                Math.round(pPerCamp)
+            ];
+        });
+
+        exportToCSV(`BD_Team_Performance_Snapshot_${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
+    }
+
+    /* 2. Export: BD Team vs Client Tier Summary */
+    function exportBdTierTable() {
+        const bdClientMap = {};
+        currentFilteredData.forEach(d => {
+            if (d.bd === 'Unknown' || d.client === 'Unknown') return;
+            if (!bdClientMap[d.bd]) bdClientMap[d.bd] = {};
+            if (!bdClientMap[d.bd][d.client]) bdClientMap[d.bd][d.client] = { camps: 0, totalP: 0 };
+            bdClientMap[d.bd][d.client].camps++;
+            let currentMarkup = d.profitType === 'Profitable' ? (d.grossBudget * d.profitRateOpt) : 0;
+            let mFee = d.grossBudget * 0.15;
+            bdClientMap[d.bd][d.client].totalP += (mFee + currentMarkup);
+        });
+
+        const bdStats = {};
+        Object.keys(bdClientMap).forEach(bd => {
+            bdStats[bd] = { S: 0, A: 0, B: 0, C: 0, D: 0, total: 0 };
+            Object.keys(bdClientMap[bd]).forEach(client => {
+                let cData = bdClientMap[bd][client];
+                let tier = getClientTier(cData.totalP, cData.camps);
+                bdStats[bd][tier]++;
+                bdStats[bd].total++;
+            });
+        });
+
+        const headers = ["BD Team", "Tier S", "Tier A", "Tier B", "Tier C", "Tier D", "Total Clients"];
+        const rows = Object.keys(bdStats).sort((a,b) => bdStats[b].total - bdStats[a].total).map(bd => [
+            bd,
+            bdStats[bd].S,
+            bdStats[bd].A,
+            bdStats[bd].B,
+            bdStats[bd].C,
+            bdStats[bd].D,
+            bdStats[bd].total
+        ]);
+
+        exportToCSV(`BD_Team_vs_Client_Tier_Summary_${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
+    }
+
+    /* 3. Export: BD Team, Client & Ad Account Breakdown (All Filtered Data) */
+    function exportClientBreakdownTable() {
+        const headers = ["BD Team", "Client Name", "Ad Account Name", "Camps", "Gross Budget (THB)", "Est. Markup (THB)", "Total Profit (THB)", "Profit/Camp (THB)"];
+        const rows = clientTableDataList.map(item => [
+            item.bd,
+            item.client,
+            item.adAccount,
+            item.camps,
+            Math.round(item.budget),
+            Math.round(item.markup),
+            Math.round(item.totalP),
+            Math.round(item.profitPerCamp)
+        ]);
+
+        exportToCSV(`Client_Breakdown_Report_${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
+    }
+
+    /* 4. Export: Consolidated Client Summary (All Filtered Data) */
+    function exportConsolidatedSummaryTable() {
+        const headers = ["BD Team", "Client Name", "Tier", "Camps", "Gross Budget (THB)", "Est. Markup (THB)", "Total Profit (THB)", "Profit/Camp (THB)"];
+        const rows = clientSummaryDataList.map(item => [
+            item.bd,
+            item.client,
+            `Tier ${item.tier}`,
+            item.camps,
+            Math.round(item.budget),
+            Math.round(item.markup),
+            Math.round(item.totalP),
+            Math.round(item.profitPerCamp)
+        ]);
+
+        exportToCSV(`Consolidated_Client_Summary_${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
+    }
 
     /* AI Chat Engine Logic หลังบ้าน */
     function toggleAiChat() { let w = document.getElementById('aiChatWindow'); w.classList.toggle('active'); }
