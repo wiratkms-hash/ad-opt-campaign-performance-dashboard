@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.11 (Fully Optimized Data Pipeline)</title>
+    <title>Ad Optimization Performance Dashboard V5.12 (Client Tier Analysis & Dynamic Dates)</title>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js DataLabels Plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -46,7 +49,7 @@
         .chart-body { flex-grow: 1; position: relative; }
         canvas { max-height: 320px !important; cursor: pointer; }
         
-        .table-container { overflow-x: auto; flex-grow: 1; min-height: 300px; }
+        .table-container { overflow-x: auto; flex-grow: 1; min-height: 250px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
         th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border-color); word-wrap: break-word; vertical-align: top;}
         th { font-weight: 600; color: var(--text-muted); background: #f8fafc; position: sticky; top: 0; z-index: 10; user-select: none; }
@@ -86,11 +89,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.11)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.12)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.11)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.12)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -101,6 +104,8 @@
         <div class="filter-item"><label>📅 Campaign End Date</label><input type="date" id="filter-end-date" onchange="updateDashboard()"></div>
         <div class="filter-item"><label>BD Team</label><div class="ms-container" id="ms-bd"><div class="ms-header" onclick="toggleMs('bd')">All BD Teams</div><div class="ms-list" id="list-bd"></div></div></div>
         <div class="filter-item"><label>Client Name</label><div class="ms-container" id="ms-client"><div class="ms-header" onclick="toggleMs('client')">All Clients</div><div class="ms-list" id="list-client"></div></div></div>
+        <!-- จุดแก้ไขที่ 1: เพิ่มกล่อง Dropdown ตัวกรอง Client Tier บนแถบ Filter Container -->
+        <div class="filter-item"><label>Client Tier</label><div class="ms-container" id="ms-tier"><div class="ms-header" onclick="toggleMs('tier')">All Tiers</div><div class="ms-list" id="list-tier"></div></div></div>
         <div class="filter-item"><label>Ad Opt PIC</label><div class="ms-container" id="ms-pic"><div class="ms-header" onclick="toggleMs('pic')">All PICs</div><div class="ms-list" id="list-pic"></div></div></div>
         <div class="filter-item"><label>Profit Type</label><div class="ms-container" id="ms-profitType"><div class="ms-header" onclick="toggleMs('profitType')">All Types</div><div class="ms-list" id="list-profitType"></div></div></div>
         <div class="filter-item"><label>Campaign Funnel</label><div class="ms-container" id="ms-funnel"><div class="ms-header" onclick="toggleMs('funnel')">All Funnels</div><div class="ms-list" id="list-funnel"></div></div></div>
@@ -158,6 +163,30 @@
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Trend by Month</h3><button class="btn-toggle" id="btnToggleTrend" onclick="toggleTrend()">View: Count</button></div><div class="chart-body"><canvas id="platformTrendChart"></canvas></div></div>
     </div>
 
+    <!-- จุดแก้ไขที่ 2: เพิ่มตารางสร้างใหม่ "BD Team vs Client Tier Summary" แสดงการแจกแจงเกรดลูกค้าของแต่ละทีม BD -->
+    <div class="chart-row row-1-col">
+        <div class="chart-card" style="min-height: 320px;">
+            <div class="chart-header"><h3 class="chart-title">🏷️ BD Team vs Client Tier Summary</h3></div>
+            <div class="table-container">
+                <table id="bdTierTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%">BD Team</th>
+                            <th style="width: 12%">Tier S</th>
+                            <th style="width: 12%">Tier A</th>
+                            <th style="width: 12%">Tier B</th>
+                            <th style="width: 12%">Tier C</th>
+                            <th style="width: 12%">Tier D</th>
+                            <th style="width: 15%">Total Clients</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ตาราง Breakdown รายบัญชีแอดแชนเนล -->
     <div class="chart-row row-1-col">
         <div class="chart-card" style="min-height: 480px;">
             <div class="chart-header"><h3 class="chart-title">💼 BD Team, Client & Ad Account Breakdown (Click Row to Filter Client)</h3></div>
@@ -186,19 +215,22 @@
         </div>
     </div>
 
+    <!-- ตาราง Consolidated Client Summary สรุปรายชื่อลูกค้ารายเจ้า (ไม่แตกย่อยบัญชีแอด) -->
     <div class="chart-row row-1-col">
         <div class="chart-card" style="min-height: 480px;">
             <div class="chart-header"><h3 class="chart-title">🏢 Consolidated Client Summary (Click Row to Filter Client)</h3></div>
             <div class="table-container">
+                <!-- จุดแก้ไขที่ 3: ปรับขนาดพื้นที่ และแทรกคอลัมน์ Tier เข้าตารางสรุปรายลูกค้าเป็นระบบ 8 คอลัมน์สมบูรณ์ -->
                 <table id="summaryTable">
                     <thead>
                         <tr>
-                            <th style="width: 15%">BD Team</th>
-                            <th style="width: 22%">Client Name</th>
+                            <th style="width: 14%">BD Team</th>
+                            <th style="width: 18%">Client Name</th>
+                            <th style="width: 8%">Tier</th>
                             <th class="sortable" onclick="handleSumSort('camps')" style="width: 8%; cursor: pointer;">Camps <span id="sort-sum-camps"></span></th>
-                            <th class="sortable" onclick="handleSumSort('budget')" style="width: 15%; cursor: pointer;">Gross Budget <span id="sort-sum-budget">🔽</span></th>
-                            <th style="width: 14%">Est. Markup</th>
-                            <th class="sortable" onclick="handleSumSort('totalP')" style="width: 14%; cursor: pointer;">Total Profit <span id="sort-sum-totalP"></span></th>
+                            <th class="sortable" onclick="handleSumSort('budget')" style="width: 14%; cursor: pointer;">Gross Budget <span id="sort-sum-budget">🔽</span></th>
+                            <th style="width: 13%">Est. Markup</th>
+                            <th class="sortable" onclick="handleSumSort('totalP')" style="width: 13%; cursor: pointer;">Total Profit <span id="sort-sum-totalP"></span></th>
                             <th style="width: 12%">Profit/Camp</th>
                         </tr>
                     </thead>
@@ -213,6 +245,7 @@
         </div>
     </div>
 
+    <!-- AI Floating Chat Component หน้าบ้าน -->
     <button class="ai-chat-toggle" onclick="toggleAiChat()">💬</button>
     <div class="ai-chat-window" id="aiChatWindow">
         <div class="ai-chat-header">
@@ -263,11 +296,13 @@
     let clientSummaryDataList = []; let currentSummaryPage = 1; const summaryRowsPerPage = 10;
     let sortSumCol = 'budget'; let sortSumDesc = true;
 
+    // จุดแก้ไขที่ 4: เพิ่มตัวแปร tier เข้าสู่ filterConfig
     let filterConfig = {
         team: { label: 'Teams', selected: [], allValues: [] },
         year: { label: 'Years', selected: [], allValues: [] },
         bd: { label: 'BD Teams', selected: [], allValues: [] },
         client: { label: 'Clients', selected: [], allValues: [] },
+        tier: { label: 'Tiers', selected: ['S', 'A', 'B', 'C', 'D'], allValues: ['S', 'A', 'B', 'C', 'D'] },
         pic: { label: 'PICs', selected: [], allValues: [] },
         profitType: { label: 'Types', selected: [], allValues: [] },
         funnel: { label: 'Funnels', selected: [] , allValues: [] },
@@ -282,6 +317,16 @@
     function cleanText(val) { return (!val || val.toString().includes('#N/A') || val.toString().trim() === '') ? 'Unknown' : val.toString().trim(); }
     function cleanContentType(val) { if (!val) return 'Unknown'; let txt = val.toString().trim().toUpperCase(); if (txt === 'KOL') return 'KOL'; if (txt === 'NON-KOL' || txt === 'NON GOLD' || txt === 'NON KOL') return 'Non-KOL'; return 'Unknown'; }
     function wrapLabel(text, maxLength = 12) { const words = text.split(' '); let lines = [], currentLine = words[0] || ''; for (let i = 1; i < words.length; i++) { if (currentLine.length + words[i].length + 1 <= maxLength) currentLine += " " + words[i]; else { lines.push(currentLine); currentLine = words[i]; } } if(currentLine) lines.push(currentLine); return lines; }
+
+    // จุดแก้ไขที่ 5: ฟังก์ชันประเมิน Client Tier ตามรูปภาพเงื่อนไขเป๊ะ 100%
+    function getClientTier(totalP, camps) {
+        let profitPerCamp = camps > 0 ? (totalP / camps) : 0;
+        if (totalP >= 200000 && profitPerCamp >= 9500) return 'S';
+        if (totalP >= 100000 && profitPerCamp >= 5000) return 'A';
+        if (totalP >= 30000 && profitPerCamp >= 5000) return 'B';
+        if (totalP >= 30000) return 'C';
+        return 'D';
+    }
 
     function standardizePlatform(val) {
         let txt = cleanText(val); let upper = txt.toUpperCase();
@@ -328,7 +373,7 @@
             rawData.push({ 
                 team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bd: cleanText(row[36]), 
                 client: cleanText(row[40]), adAccount: cleanText(row[35]), funnel: cleanText(row[39]), 
-                platform: standardizePlatform(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[4]), 
+                platform: standardizePlatform(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[0]), pic: cleanText(row[4]), 
                 budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), 
                 profitType: optRate === 0 ? 'Transparent' : 'Profitable', 
                 profitRateOpt: optRate, datePacing: cleanPercent(row[23]),
@@ -343,8 +388,9 @@
         document.getElementById('loading-screen').style.display = 'none';
     }
 
+    // จุดแก้ไขที่ 6: ปรับฟังก์ชัน setDefaultDates ให้จับเดือนปัจจุบัน Dynamic Real Current Month อัตโนมัติ
     function setDefaultDates() {
-        let now = new Date(2026, 4, 1); 
+        let now = new Date(); // ดึงเวลาจริง ณ วันเปิดหน้าจอ
         let currentYear = now.getFullYear(); let currentMonth = now.getMonth();
         let defStart = new Date(currentYear, currentMonth, 1); let defEnd = new Date(currentYear, currentMonth + 1, 0);
         let startCount = rawData.filter(d => d.startDateObj && (d.startDateObj >= defStart && d.startDateObj <= defEnd)).length;
@@ -365,7 +411,12 @@
 
     function setupFilters() {
         Object.keys(filterConfig).forEach(fid => {
-            let unique = [...new Set(rawData.map(item => item[fid]))].filter(val => val !== 'Unknown').sort();
+            let unique = [];
+            if (fid === 'tier') {
+                unique = ['S', 'A', 'B', 'C', 'D'];
+            } else {
+                unique = [...new Set(rawData.map(item => item[fid]))].filter(val => val !== 'Unknown').sort();
+            }
             filterConfig[fid].allValues = unique; filterConfig[fid].selected = [...unique];
             let listHtml = '';
             if (fid === 'client') {
@@ -376,6 +427,8 @@
                 let safeVal = val.replace(/"/g, "&quot;"); 
                 if (fid === 'client') {
                     listHtml += `<div class="item-label-client"><label><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label></div>`;
+                } else if (fid === 'tier') {
+                    listHtml += `<label><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> Tier ${val}</label>`;
                 } else {
                     listHtml += `<label><input type="checkbox" value="${safeVal}" class="chk-${fid}" onchange="handleIndividualCheck('${fid}', this)" checked> ${val}</label>`;
                 }
@@ -408,7 +461,7 @@
         let count = filterConfig[fid].selected.length; let total = filterConfig[fid].allValues.length;
         if (count === total) header.innerText = `All ${filterConfig[fid].label}`;
         else if (count === 0) header.innerText = `None Selected`;
-        else if (count === 1) header.innerText = filterConfig[fid].selected[0];
+        else if (count === 1) header.innerText = fid === 'tier' ? `Tier ${filterConfig[fid].selected[0]}` : filterConfig[fid].selected[0];
         else header.innerText = `${count}/${total} Selected`;
     }
 
@@ -430,19 +483,43 @@
         updateFilterHeader(fid); updateDashboard();
     }
 
+    // จุดแก้ไขที่ 7: คำนวณหา Client Tier ประจำงวดวันที่ แล้วนำมาใช้กรองข้อมูลร่วมกับฟิลเตอร์ Tier
     function updateDashboard() {
         let startVal = document.getElementById('filter-start-date').value; let endVal = document.getElementById('filter-end-date').value;
         let pDate = (val) => { if(!val) return null; let p = val.split('-'); return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])); };
         let startDateSelected = pDate(startVal); let endDateSelected = pDate(endVal);
 
+        // ขั้นที่ 1: คำนวณหา Tier ที่แท้จริงของลูกค้าแต่ละรายในช่วงปฏิทินที่กำลังเลือกอยู่
+        const dateFilteredClientStats = {};
+        rawData.forEach(d => {
+            let dateMatch = true;
+            if (startDateSelected && endDateSelected && d.startDateObj) { dateMatch = (d.startDateObj >= startDateSelected && d.startDateObj <= endDateSelected); }
+            if (dateMatch && d.client && d.client !== 'Unknown') {
+                if (!dateFilteredClientStats[d.client]) dateFilteredClientStats[d.client] = { camps: 0, totalP: 0 };
+                dateFilteredClientStats[d.client].camps++;
+                let currentMarkup = d.profitType === 'Profitable' ? (d.grossBudget * d.profitRateOpt) : 0;
+                let mFee = d.grossBudget * 0.15;
+                dateFilteredClientStats[d.client].totalP += (mFee + currentMarkup);
+            }
+        });
+
+        const clientTierMap = {};
+        Object.keys(dateFilteredClientStats).forEach(c => {
+            clientTierMap[c] = getClientTier(dateFilteredClientStats[c].totalP, dateFilteredClientStats[c].camps);
+        });
+
+        // ขั้นที่ 2: ร่อนข้อมูลผ่านฟิลเตอร์ทั้งหมด รวมถึงตัวกรอง Client Tier
         currentFilteredData = rawData.filter(d => {
             let dateMatch = true;
             if (startDateSelected && endDateSelected && d.startDateObj) { dateMatch = (d.startDateObj >= startDateSelected && d.startDateObj <= endDateSelected); }
+            let clientTier = clientTierMap[d.client] || 'D';
+
             return dateMatch &&
                 ((filterConfig.team.selected.length === filterConfig.team.allValues.length) || filterConfig.team.selected.includes(d.team)) &&
                 ((filterConfig.year.selected.length === filterConfig.year.allValues.length) || filterConfig.year.selected.includes(d.year)) &&
                 ((filterConfig.bd.selected.length === filterConfig.bd.allValues.length) || filterConfig.bd.selected.includes(d.bd)) &&
                 ((filterConfig.client.selected.length === filterConfig.client.allValues.length) || filterConfig.client.selected.includes(d.client)) &&
+                ((filterConfig.tier.selected.length === filterConfig.tier.allValues.length) || filterConfig.tier.selected.includes(clientTier)) &&
                 ((filterConfig.pic.selected.length === filterConfig.pic.allValues.length) || filterConfig.pic.selected.includes(d.pic)) &&
                 ((filterConfig.profitType.selected.length === filterConfig.profitType.allValues.length) || filterConfig.profitType.selected.includes(d.profitType)) &&
                 ((filterConfig.funnel.selected.length === filterConfig.funnel.allValues.length) || filterConfig.funnel.selected.includes(d.funnel)) &&
@@ -474,6 +551,7 @@
 
         drawPicChart(currentFilteredData); 
         drawBdTable(currentFilteredData, fmt); 
+        drawBdTierTable(currentFilteredData); // วาดตารางสรุป BD Team vs Client Tier
         drawFunnelRadar(currentFilteredData); 
         drawBdFunnelChart(currentFilteredData); 
         drawBdProfitChart(currentFilteredData); 
@@ -484,6 +562,49 @@
         
         prepareClientTableData(currentFilteredData, fmt);
         prepareSummaryTableData(currentFilteredData, fmt);
+    }
+
+    // จุดแก้ไขที่ 8: ฟังก์ชันประมวลผลตารางใหม่ BD Team vs Client Tier Summary
+    function drawBdTierTable(data) {
+        const tbody = document.querySelector('#bdTierTable tbody');
+        if (!tbody) return;
+        let html = '';
+        const bdClientMap = {};
+
+        data.forEach(d => {
+            if (d.bd === 'Unknown' || d.client === 'Unknown') return;
+            if (!bdClientMap[d.bd]) bdClientMap[d.bd] = {};
+            if (!bdClientMap[d.bd][d.client]) bdClientMap[d.bd][d.client] = { camps: 0, totalP: 0 };
+            bdClientMap[d.bd][d.client].camps++;
+            let currentMarkup = d.profitType === 'Profitable' ? (d.grossBudget * d.profitRateOpt) : 0;
+            let mFee = d.grossBudget * 0.15;
+            bdClientMap[d.bd][d.client].totalP += (mFee + currentMarkup);
+        });
+
+        const bdStats = {};
+        Object.keys(bdClientMap).forEach(bd => {
+            bdStats[bd] = { S: 0, A: 0, B: 0, C: 0, D: 0, total: 0 };
+            Object.keys(bdClientMap[bd]).forEach(client => {
+                let cData = bdClientMap[bd][client];
+                let tier = getClientTier(cData.totalP, cData.camps);
+                bdStats[bd][tier]++;
+                bdStats[bd].total++;
+            });
+        });
+
+        Object.keys(bdStats).sort((a,b) => bdStats[b].total - bdStats[a].total).forEach(bd => {
+            let safeBd = bd.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            html += `<tr class="clickable-row" onclick="applyCrossFilter('bd', '${safeBd}')">
+                <td><b>${bd}</b></td>
+                <td>${bdStats[bd].S}</td>
+                <td>${bdStats[bd].A}</td>
+                <td>${bdStats[bd].B}</td>
+                <td>${bdStats[bd].C}</td>
+                <td>${bdStats[bd].D}</td>
+                <td><b>${bdStats[bd].total}</b></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
     }
 
     function handleSort(col) {
@@ -570,6 +691,7 @@
         });
     }
 
+    // จุดแก้ไขที่ 9: คํานวณ Tier ในตาราง Consolidated Client Summary
     function prepareSummaryTableData(data, fmt) {
         const stats = {};
         data.forEach(d => {
@@ -583,11 +705,15 @@
             stats[key].totalP += (mFee + currentMarkup);
         });
         clientSummaryDataList = Object.keys(stats).map(key => {
-            let item = stats[key]; item.profitPerCamp = item.camps > 0 ? (item.totalP / item.camps) : 0; return item;
+            let item = stats[key]; 
+            item.profitPerCamp = item.camps > 0 ? (item.totalP / item.camps) : 0; 
+            item.tier = getClientTier(item.totalP, item.camps);
+            return item;
         });
         applySummarySort(); updateSummarySortIcons(); currentSummaryPage = 1; renderSummaryTablePage(fmt);
     }
 
+    // จุดแก้ไขที่ 10: พ่นคอลัมน์ Tier ออกหน้าจอในตาราง Consolidated Client Summary
     function renderSummaryTablePage(fmt) {
         const tbody = document.querySelector('#summaryTable tbody'); let html = '';
         const start = (currentSummaryPage - 1) * summaryRowsPerPage; const paginatedItems = clientSummaryDataList.slice(start, start + summaryRowsPerPage);
@@ -596,6 +722,7 @@
             html += `<tr class="clickable-row" onclick="applyCrossFilter('client', '${safeClient}')">
                 <td>${item.bd}</td>
                 <td>${item.client}</td>
+                <td><b>Tier ${item.tier}</b></td>
                 <td>${item.camps}</td>
                 <td>฿${fmt(item.budget)}</td>
                 <td>฿${fmt(item.markup)}</td>
