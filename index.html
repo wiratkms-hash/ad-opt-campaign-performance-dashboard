@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.12 (Client Tier Analysis & Dynamic Dates)</title>
+    <title>Ad Optimization Performance Dashboard V5.13 (Correct Budget Column Reference)</title>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Chart.js DataLabels Plugin -->
@@ -89,11 +89,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.12)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.13)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.12)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.13)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -104,7 +104,6 @@
         <div class="filter-item"><label>📅 Campaign End Date</label><input type="date" id="filter-end-date" onchange="updateDashboard()"></div>
         <div class="filter-item"><label>BD Team</label><div class="ms-container" id="ms-bd"><div class="ms-header" onclick="toggleMs('bd')">All BD Teams</div><div class="ms-list" id="list-bd"></div></div></div>
         <div class="filter-item"><label>Client Name</label><div class="ms-container" id="ms-client"><div class="ms-header" onclick="toggleMs('client')">All Clients</div><div class="ms-list" id="list-client"></div></div></div>
-        <!-- จุดแก้ไขที่ 1: เพิ่มกล่อง Dropdown ตัวกรอง Client Tier บนแถบ Filter Container -->
         <div class="filter-item"><label>Client Tier</label><div class="ms-container" id="ms-tier"><div class="ms-header" onclick="toggleMs('tier')">All Tiers</div><div class="ms-list" id="list-tier"></div></div></div>
         <div class="filter-item"><label>Ad Opt PIC</label><div class="ms-container" id="ms-pic"><div class="ms-header" onclick="toggleMs('pic')">All PICs</div><div class="ms-list" id="list-pic"></div></div></div>
         <div class="filter-item"><label>Profit Type</label><div class="ms-container" id="ms-profitType"><div class="ms-header" onclick="toggleMs('profitType')">All Types</div><div class="ms-list" id="list-profitType"></div></div></div>
@@ -163,7 +162,7 @@
         <div class="chart-card"><div class="chart-header"><h3 class="chart-title">Platform Trend by Month</h3><button class="btn-toggle" id="btnToggleTrend" onclick="toggleTrend()">View: Count</button></div><div class="chart-body"><canvas id="platformTrendChart"></canvas></div></div>
     </div>
 
-    <!-- จุดแก้ไขที่ 2: เพิ่มตารางสร้างใหม่ "BD Team vs Client Tier Summary" แสดงการแจกแจงเกรดลูกค้าของแต่ละทีม BD -->
+    <!-- ตารางสรุป BD Team vs Client Tier Summary -->
     <div class="chart-row row-1-col">
         <div class="chart-card" style="min-height: 320px;">
             <div class="chart-header"><h3 class="chart-title">🏷️ BD Team vs Client Tier Summary</h3></div>
@@ -220,7 +219,6 @@
         <div class="chart-card" style="min-height: 480px;">
             <div class="chart-header"><h3 class="chart-title">🏢 Consolidated Client Summary (Click Row to Filter Client)</h3></div>
             <div class="table-container">
-                <!-- จุดแก้ไขที่ 3: ปรับขนาดพื้นที่ และแทรกคอลัมน์ Tier เข้าตารางสรุปรายลูกค้าเป็นระบบ 8 คอลัมน์สมบูรณ์ -->
                 <table id="summaryTable">
                     <thead>
                         <tr>
@@ -296,7 +294,6 @@
     let clientSummaryDataList = []; let currentSummaryPage = 1; const summaryRowsPerPage = 10;
     let sortSumCol = 'budget'; let sortSumDesc = true;
 
-    // จุดแก้ไขที่ 4: เพิ่มตัวแปร tier เข้าสู่ filterConfig
     let filterConfig = {
         team: { label: 'Teams', selected: [], allValues: [] },
         year: { label: 'Years', selected: [], allValues: [] },
@@ -318,7 +315,6 @@
     function cleanContentType(val) { if (!val) return 'Unknown'; let txt = val.toString().trim().toUpperCase(); if (txt === 'KOL') return 'KOL'; if (txt === 'NON-KOL' || txt === 'NON GOLD' || txt === 'NON KOL') return 'Non-KOL'; return 'Unknown'; }
     function wrapLabel(text, maxLength = 12) { const words = text.split(' '); let lines = [], currentLine = words[0] || ''; for (let i = 1; i < words.length; i++) { if (currentLine.length + words[i].length + 1 <= maxLength) currentLine += " " + words[i]; else { lines.push(currentLine); currentLine = words[i]; } } if(currentLine) lines.push(currentLine); return lines; }
 
-    // จุดแก้ไขที่ 5: ฟังก์ชันประเมิน Client Tier ตามรูปภาพเงื่อนไขเป๊ะ 100%
     function getClientTier(totalP, camps) {
         let profitPerCamp = camps > 0 ? (totalP / camps) : 0;
         if (totalP >= 200000 && profitPerCamp >= 9500) return 'S';
@@ -352,7 +348,9 @@
         
         parsedTH.forEach(row => {
             if (!row[4] || row[4].includes('#N/A') || row[4] === '') return;
-            let netBudget = cleanNumber(row[31]);
+            
+            // ✨ จุดแก้ไขสำคัญ V5.13: เปลี่ยนพิกัดย้ายการดึงข้อมูล Net Budget ฝั่ง TH Data จาก row[31] มาผูกเข้ากับคอลัมน์ L (row[11])
+            let netBudget = cleanNumber(row[11]);
             let optRate = cleanPercent(row[13]); 
             
             rawData.push({ 
@@ -373,7 +371,7 @@
             rawData.push({ 
                 team: 'HOC', year: cleanText(row[1]), month: cleanText(row[38]), bd: cleanText(row[36]), 
                 client: cleanText(row[40]), adAccount: cleanText(row[35]), funnel: cleanText(row[39]), 
-                platform: standardizePlatform(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[0]), pic: cleanText(row[4]), 
+                platform: standardizePlatform(row[8]), content: cleanContentType(row[0]), pic: cleanText(row[4]), 
                 budget: netBudget, grossBudget: netBudget / 0.85, spend: cleanNumber(row[37]), 
                 profitType: optRate === 0 ? 'Transparent' : 'Profitable', 
                 profitRateOpt: optRate, datePacing: cleanPercent(row[23]),
@@ -388,9 +386,8 @@
         document.getElementById('loading-screen').style.display = 'none';
     }
 
-    // จุดแก้ไขที่ 6: ปรับฟังก์ชัน setDefaultDates ให้จับเดือนปัจจุบัน Dynamic Real Current Month อัตโนมัติ
     function setDefaultDates() {
-        let now = new Date(); // ดึงเวลาจริง ณ วันเปิดหน้าจอ
+        let now = new Date(); 
         let currentYear = now.getFullYear(); let currentMonth = now.getMonth();
         let defStart = new Date(currentYear, currentMonth, 1); let defEnd = new Date(currentYear, currentMonth + 1, 0);
         let startCount = rawData.filter(d => d.startDateObj && (d.startDateObj >= defStart && d.startDateObj <= defEnd)).length;
@@ -483,13 +480,11 @@
         updateFilterHeader(fid); updateDashboard();
     }
 
-    // จุดแก้ไขที่ 7: คำนวณหา Client Tier ประจำงวดวันที่ แล้วนำมาใช้กรองข้อมูลร่วมกับฟิลเตอร์ Tier
     function updateDashboard() {
         let startVal = document.getElementById('filter-start-date').value; let endVal = document.getElementById('filter-end-date').value;
         let pDate = (val) => { if(!val) return null; let p = val.split('-'); return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])); };
         let startDateSelected = pDate(startVal); let endDateSelected = pDate(endVal);
 
-        // ขั้นที่ 1: คำนวณหา Tier ที่แท้จริงของลูกค้าแต่ละรายในช่วงปฏิทินที่กำลังเลือกอยู่
         const dateFilteredClientStats = {};
         rawData.forEach(d => {
             let dateMatch = true;
@@ -508,7 +503,6 @@
             clientTierMap[c] = getClientTier(dateFilteredClientStats[c].totalP, dateFilteredClientStats[c].camps);
         });
 
-        // ขั้นที่ 2: ร่อนข้อมูลผ่านฟิลเตอร์ทั้งหมด รวมถึงตัวกรอง Client Tier
         currentFilteredData = rawData.filter(d => {
             let dateMatch = true;
             if (startDateSelected && endDateSelected && d.startDateObj) { dateMatch = (d.startDateObj >= startDateSelected && d.startDateObj <= endDateSelected); }
@@ -551,7 +545,7 @@
 
         drawPicChart(currentFilteredData); 
         drawBdTable(currentFilteredData, fmt); 
-        drawBdTierTable(currentFilteredData); // วาดตารางสรุป BD Team vs Client Tier
+        drawBdTierTable(currentFilteredData); 
         drawFunnelRadar(currentFilteredData); 
         drawBdFunnelChart(currentFilteredData); 
         drawBdProfitChart(currentFilteredData); 
@@ -564,7 +558,6 @@
         prepareSummaryTableData(currentFilteredData, fmt);
     }
 
-    // จุดแก้ไขที่ 8: ฟังก์ชันประมวลผลตารางใหม่ BD Team vs Client Tier Summary
     function drawBdTierTable(data) {
         const tbody = document.querySelector('#bdTierTable tbody');
         if (!tbody) return;
@@ -691,7 +684,6 @@
         });
     }
 
-    // จุดแก้ไขที่ 9: คํานวณ Tier ในตาราง Consolidated Client Summary
     function prepareSummaryTableData(data, fmt) {
         const stats = {};
         data.forEach(d => {
@@ -713,7 +705,6 @@
         applySummarySort(); updateSummarySortIcons(); currentSummaryPage = 1; renderSummaryTablePage(fmt);
     }
 
-    // จุดแก้ไขที่ 10: พ่นคอลัมน์ Tier ออกหน้าจอในตาราง Consolidated Client Summary
     function renderSummaryTablePage(fmt) {
         const tbody = document.querySelector('#summaryTable tbody'); let html = '';
         const start = (currentSummaryPage - 1) * summaryRowsPerPage; const paginatedItems = clientSummaryDataList.slice(start, start + summaryRowsPerPage);
