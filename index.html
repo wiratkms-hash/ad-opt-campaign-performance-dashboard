@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ad Optimization Performance Dashboard V5.16 (Ultimate Analytics Edition)</title>
+    <title>Ad Optimization Performance Dashboard V5.17 (Precision Format Edition)</title>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Chart.js DataLabels Plugin -->
@@ -94,11 +94,11 @@
 
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.16)...</h2>
+        <h2 id="loading-text" style="margin-top: 20px; color: #1e293b;">กำลังโหลดและประมวลผลข้อมูล (V5.17)...</h2>
     </div>
 
     <div class="header-container">
-        <h1>📊 Ad Optimization Team Performance (V5.16)</h1>
+        <h1>📊 Ad Optimization Team Performance (V5.17)</h1>
         <button class="btn-toggle btn-toggle-alt" onclick="resetAllFilters()">↺ Reset All Filters</button>
     </div>
 
@@ -291,13 +291,14 @@
         let spinner = document.getElementById('loading-screen'); if(spinner) spinner.style.display = 'none';
     };
 
+    /* ✨ ปรับปรุงการย่อตัวเลข Compact Format (โชว์ M สำหรับหลักล้าน และ K สำหรับหลักพัน) */
     Chart.register(ChartDataLabels);
     Chart.defaults.set('plugins.datalabels', {
         color: '#ffffff', font: { weight: 'bold', size: 11 },
         formatter: (value) => {
             if (value === 0) return '';
-            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-            if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+            if (value >= 1000000) return (value / 1000000).toFixed(2) + 'M';
+            if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
             return value;
         },
         display: (context) => context.dataset.data[context.dataIndex] > 0
@@ -345,7 +346,6 @@
         return 'D';
     }
 
-    /* ✨ ฟังก์ชันกลางสำหรับตารางโชว์ ตัวเลขปัจจุบัน + (% เพิ่มลด) ในเซลล์เดียวกัน */
     function formatValueWithPct(curr, prev, isCurrency, fmt) {
         let currStr = isCurrency ? '฿' + fmt(curr) : fmt(curr);
         if (prev === 0 && curr > 0) return `${currStr} <span class="txt-green" style="font-size: 11px;">(NEW)</span>`;
@@ -776,7 +776,6 @@
         });
     }
 
-    /* ✨ จุดแก้ไข V5.16: จัดรูปแบบให้มีตัวเลขเงิน/จำนวนจริงก่อน แล้วตามด้วย (%เพิ่ม-ลด) ในเซลล์เดียวกัน */
     function prepareSummaryTableData(currData, compData, fmt) {
         const cStats = {}, pStats = {};
         
@@ -811,7 +810,6 @@
 
             item.tier = getClientTier(item.totalP, item.camps);
             
-            // Format ให้ออกมาเป็น ตัวเลข (▲ +%)
             item.campsStr = formatValueWithPct(item.camps, prev.camps, false, fmt);
             item.budgetStr = formatValueWithPct(item.budget, prev.budget, true, fmt);
             item.markupStr = formatValueWithPct(item.markup, prev.markup, true, fmt);
@@ -857,7 +855,6 @@
 
     function drawPicChart(data) { destroy('pic'); const counts = {}; data.forEach(d => { if(d.pic !== 'Unknown') counts[d.pic] = (counts[d.pic] || 0) + 1; }); let origLabels = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['pic'] = new Chart(document.getElementById('picChart'), { type: 'bar', data: { labels: origLabels.map(l => wrapLabel(l)), datasets: [{ data: origLabels.map(k => counts[k]), backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('pic', origLabels[el[0].index]); } } }); }
     
-    /* ✨ จุดแก้ไข V5.16: ตาราง BD Snapshot โชว์ตัวเลขเงิน + (เปอร์เซ็นต์) ด้วย formatValueWithPct */
     function drawBdTable(currData, compData, fmt) {
         const tbody = document.querySelector('#bdTable tbody'); let html = ''; 
         const cStats = {}, pStats = {};
@@ -911,6 +908,7 @@
         charts['bdProfit'] = new Chart(document.getElementById('bdProfitChart'), { type: 'bar', data: { labels: bds.map(l => wrapLabel(l, 10)), datasets: datasets }, options: { scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: defaultLegend }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('bd', bds[el[0].index]); } } }); 
     }
     
+    /* ✨ จุดแก้ไข 1: แก้ไขสเปกการคำนวณ % บน Overall Profit Type และปรับ Format เงิน Compact 2.85M */
     function drawProfitTypeChart(data) { 
         destroy('profitType'); const types = ['Profitable', 'Transparent']; 
         const values = types.map(t => { let filtered = data.filter(d => d.profitType === t); return profitTypeMode === 'count' ? filtered.length : filtered.reduce((s, c) => s + c.grossBudget, 0); }); 
@@ -925,10 +923,15 @@
                         font: { weight: 'bold', size: 11 },
                         formatter: (val, ctx) => {
                             let dataset = ctx.chart.data.datasets[0];
-                            let total = dataset.data.reduce((acc, v) => acc + val, 0);
+                            let total = dataset.data.reduce((acc, v) => acc + v, 0); // แก้ไข acc + v (ป้องกันบั๊ก 50%)
                             if (total === 0 || val === 0) return '';
                             let pct = ((val / total) * 100).toFixed(1);
-                            return profitTypeMode === 'count' ? `${val} (${pct}%)` : `฿${(val/1000).toFixed(0)}K (${pct}%)`;
+                            
+                            if (profitTypeMode === 'budget') {
+                                let compactVal = val >= 1000000 ? (val / 1000000).toFixed(2) + 'M' : (val / 1000).toFixed(0) + 'K';
+                                return `฿${compactVal} (${pct}%)`;
+                            }
+                            return `${val} (${pct}%)`;
                         }
                     }
                 }, 
@@ -938,6 +941,7 @@
         }); 
     }
     
+    /* ✨ จุดแก้ไข 2: แก้ไขสเปกการคำนวณ % บน Overall Content Type (KOL vs Non-KOL) */
     function drawContentChart(data) { 
         destroy('content'); const counts = {}; data.forEach(d => { if(d.content !== 'Unknown') counts[d.content] = (counts[d.content] || 0) + 1; }); 
         let origL = Object.keys(counts); 
@@ -952,7 +956,7 @@
                         font: { weight: 'bold', size: 11 },
                         formatter: (val, ctx) => {
                             let dataset = ctx.chart.data.datasets[0];
-                            let total = dataset.data.reduce((acc, v) => acc + v, 0);
+                            let total = dataset.data.reduce((acc, v) => acc + v, 0); // แก้ไข acc + v (ป้องกันบั๊ก 50%)
                             if (total === 0 || val === 0) return '';
                             let pct = ((val / total) * 100).toFixed(1);
                             return `${val} (${pct}%)`;
@@ -968,7 +972,6 @@
     function drawPlatformUsage(data) { destroy('platform'); const counts = {}; data.forEach(d => { if(d.platform !== 'Unknown') counts[d.platform] = (counts[d.platform] || 0) + (platformMode === 'count' ? 1 : d.grossBudget); }); let origL = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]); charts['platform'] = new Chart(document.getElementById('platformUsageChart'), { type: 'bar', data: { labels: origL, datasets: [{ data: origL.map(k => counts[k]), backgroundColor: '#0f766e' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('platform', origL[el[0].index]); } } }); }
     function drawPlatformTrend(data) { destroy('trend'); const colors = ['#1877f2', '#000000', '#ea4335', '#06c755', '#8b5cf6']; const platforms = [...new Set(data.map(d => d.platform))].filter(p => p!=='Unknown'); const months = [...new Set(data.map(d => d.month))].filter(m => m!=='Unknown').sort(); const datasets = platforms.map((plat, i) => { const dataPoints = months.map(m => { const camps = data.filter(d => d.platform === plat && d.month === m); return trendMode === 'count' ? camps.length : camps.reduce((sum, c) => sum + c.grossBudget, 0); }); return { label: plat, data: dataPoints, borderColor: colors[i % colors.length], tension: 0.3, fill: false }; }); charts['trend'] = new Chart(document.getElementById('platformTrendChart'), { type: 'line', data: { labels: months, datasets: datasets }, options: { plugins: { legend: defaultLegend, datalabels: { display: false } }, maintainAspectRatio: false, onClick: (e, el) => { if(el.length) applyCrossFilter('month', months[el[0].index]); } } }); }
 
-    /* ฟังก์ชันกลางสำหรับการแปลงและดาวน์โหลดไฟล์ CSV (UTF-8 BOM Support) ส่งออกเฉพาะยอดเงินดิบเพื่อให้เอาไป Sum ต่อได้จริง */
     function exportToCSV(filename, headers, rows) {
         let csvContent = "\uFEFF"; 
         csvContent += headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",") + "\n";
